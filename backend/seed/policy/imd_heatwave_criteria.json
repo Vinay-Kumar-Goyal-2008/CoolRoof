@@ -1,0 +1,15 @@
+{
+  "type": "imd_heatwave_criteria",
+  "state": "ALL",
+  "discom": "ALL",
+  "effective_date": "2026-01-01",
+  "reviewed_on": "2026-10-08",
+  "status": "R — needs_verification against current IMD definitions (Appendix B item 10)",
+  "source_url": "https://mausam.imd.gov.in",
+  "use": "Labels forecast Tmax as 'meets IMD-style heatwave criterion in forecast' — never as an IMD warning.",
+  "criteria": {
+    "min_tmax_c": {"plains": 40.0, "coastal": 37.0, "hills": 30.0},
+    "departure_c": {"heatwave": 4.5, "severe": 6.5},
+    "absolute_tmax_c": {"heatwave": 45.0, "severe": 47.0}
+  }
+}

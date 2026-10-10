@@ -1,0 +1,24 @@
+# Real demo city (spec §9: Pune by default [ASSUME]). Data sources marked NV
+# must be supplied/verified by a human before a real run (see docs/GAPS.md).
+slug: pune
+name: {en: "Pune", hi: "पुणे"}
+synthetic: false
+state: Maharashtra
+bbox: [73.74, 18.42, 74.00, 18.64]   # [R] approximate municipal extent
+bbox_buffer_km: 2.0
+utm_epsg: 32643
+season: {start_mmdd: "03-01", end_mmdd: "06-15", years: 3}
+discom_map:
+  # city → state → DISCOM [R]; payback needs a verified MSEDCL tariff record (F7, D14)
+  default: {state: Maharashtra, discom: MSEDCL}
+sources:
+  wards: {path: null, status: NV, note: "City ward layer must be provided (credential/data list in spec §12)"}
+  buildings: {path: null, dataset_id: google_open_buildings_v3, status: NV}
+  population: {path: null, source: "WorldPop", status: NV}
+  landcover: {path: null, source: "ESA WorldCover 2021", status: NV}
+  dem: {path: null, source: "Copernicus GLO-30", status: NV}
+  landsat_items: planetary_computer
+  facilities: {path: null, source: "OSM extract", status: NV}
+  protected_areas: {path: null, source: "WDPA or OSM boundary=protected_area", status: NV}
+weight_profile: default
+param_overrides: {}

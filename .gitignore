@@ -1,0 +1,31 @@
+# ---- secrets (never commit; the *.example files are the templates)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials
+.aws/
+
+# ---- local tool state
+.claude/settings.local.json
+**/.claude/settings.local.json
+# Third-party agent skills are restorable from Agent/skills-lock.json (see Agent/INSTALL_SKILLS.md)
+Agent/.claude/skills/
+Agent/.agents/
+
+# ---- OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.log
+
+# ---- scratch
+*.tmp
+*.bak
+test_out*.txt
+final_tests.txt

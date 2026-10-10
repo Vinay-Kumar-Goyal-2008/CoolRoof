@@ -1,0 +1,19 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Local data store: SQLite DocStore, blobs, outbox, generated PDFs (regenerate with `uv run poe pipeline-mini`)
+data/
+
+# Secrets (copy .env.example to .env)
+.env
+.env.*
+!.env.example

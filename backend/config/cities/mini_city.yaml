@@ -1,0 +1,29 @@
+# Synthetic test city (tests/fixtures/mini_city). Every value here is test data.
+slug: mini_city
+name: {en: "Mini City (synthetic)", hi: "मिनी सिटी (कृत्रिम)"}
+synthetic: true
+state: TEST
+bbox: [73.8156, 18.4985, 73.8728, 18.5396]   # ward core (lon_min, lat_min, lon_max, lat_max)
+bbox_buffer_km: 1.4
+utm_epsg: 32643
+season: {start_mmdd: "03-01", end_mmdd: "06-15", years: [2024, 2025, 2026]}
+discom_map:
+  default: {state: TEST, discom: TEST-DISCOM}
+sources:
+  wards: {path: tests/fixtures/mini_city/wards.geojson, id_field: ward_id, name_field: name, name_hi_field: name_hi, boundary_version: mini-v1}
+  buildings: {path: tests/fixtures/mini_city/buildings.parquet, dataset_id: mini_city_synthetic_v1}
+  population: {path: tests/fixtures/mini_city/population.tif, source: "synthetic population grid"}
+  landcover: {path: tests/fixtures/mini_city/worldcover.tif, year: 2021}
+  dem: {path: tests/fixtures/mini_city/dem.tif}
+  landsat_items: tests/fixtures/mini_city/landsat
+  facilities: {path: tests/fixtures/mini_city/facilities.geojson}
+  protected_areas: {path: tests/fixtures/mini_city/protected_areas.geojson, licence: synthetic}
+  trend_series: {path: tests/fixtures/mini_city/trend_series.parquet}
+  firms: {path: tests/fixtures/mini_city/firms_sample.csv}
+  nwp: {path: tests/fixtures/mini_city/nwp_ensemble.json}
+  solar: {path: tests/fixtures/mini_city/solar_pvgis.json}
+weight_profile: default
+# Parameter overrides for this city (the mini city is only 9 km wide).
+param_overrides:
+  P-REF-RING: {inner_km: 0.3, outer_km: 1.4, min_pixels: 100, widen_factor: 1.5, max_widen: 2, fallback_city_pct: 10}
+  P-SEASON: {start_mmdd: "03-01", end_mmdd: "06-15", years: 3}

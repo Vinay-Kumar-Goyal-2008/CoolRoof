@@ -1,0 +1,40 @@
+{
+  "type": "subsidy",
+  "state": "ALL",
+  "discom": "ALL",
+  "effective_date": "2024-02-29",
+  "reviewed_on": "2026-10-08",
+  "verified_by": "Build Spec v0.3 facts F1/F3 [V] (sources A1, A2)",
+  "status": "V",
+  "rule_id": "PMSG-CFA-2024",
+  "name_i18n": {
+    "en": "PM Surya Ghar: Muft Bijli Yojana — Central Financial Assistance",
+    "hi": "पीएम सूर्य घर: मुफ़्त बिजली योजना — केंद्रीय वित्तीय सहायता"
+  },
+  "source_url": "https://pune.gov.in/scheme/pm-surya-gharmuft-bijli-yojna/",
+  "source_urls": [
+    "https://jbvnl.co.in/SOLAR/CFA_structure for PM Suryaghar.pdf",
+    "https://pune.gov.in/scheme/pm-surya-gharmuft-bijli-yojna/"
+  ],
+  "residential": {
+    "tiers": [
+      {"from_kw": 0, "to_kw": 2, "inr_per_kw": 30000},
+      {"from_kw": 2, "to_kw": 3, "inr_per_kw": 18000}
+    ],
+    "max_eligible_kw": 3,
+    "note": "Capped at the 3 kW amount for systems above 3 kW (F1)."
+  },
+  "ghs_rwa": {
+    "inr_per_kw": 18000,
+    "max_kw": 500,
+    "kw_per_house": 3,
+    "scope": "common facilities incl. EV charging, inclusive of individual rooftops (F3)",
+    "cap_reading_status": "NV"
+  },
+  "applications_portal": "https://pmsuryaghar.gov.in",
+  "release_terms": {
+    "text_en": "Released after the DISCOM commissioning certificate and bank details are submitted, \"within 30 days\".",
+    "status": "V, secondary — confirm on the portal (F5)"
+  },
+  "eligibility_status": "NV (F6) — final eligibility is decided on the national portal"
+}

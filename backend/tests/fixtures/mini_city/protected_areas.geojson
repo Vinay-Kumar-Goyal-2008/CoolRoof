@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "protected_areas",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "pa_id": "PA-MINI-1", "name": "Mini Forest Sanctuary", "designation": "Sanctuary", "source": "synthetic" }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 73.886665425842338, 18.543671178862724 ], [ 73.886559975537693, 18.55993670455468 ], [ 73.878032700647935, 18.55988620024355 ], [ 73.878138958131913, 18.543620721947047 ], [ 73.886665425842338, 18.543671178862724 ] ] ] } }
+]
+}

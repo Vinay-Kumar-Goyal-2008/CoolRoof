@@ -1,0 +1,74 @@
+{
+  "dense_built_low_green": {
+    "means": "Persistently hot, densely built with little vegetation.",
+    "rules": [
+      "R-CR-01",
+      "R-CP-01",
+      "R-EC-01"
+    ],
+    "check": [
+      "Roof materials and available terraces",
+      "Nearest public buildings for cooling points"
+    ],
+    "departments": [
+      "Municipal engineering",
+      "Urban forestry",
+      "Health"
+    ]
+  },
+  "open_bare_or_industrial": {
+    "means": "Persistently hot with low built share and low vegetation: bare ground or industrial land.",
+    "rules": [
+      "R-GR-01",
+      "R-EC-01"
+    ],
+    "check": [
+      "Land use and ownership",
+      "Industrial heat sources (not visible to Landsat)"
+    ],
+    "departments": [
+      "Town planning",
+      "Industries",
+      "Urban forestry"
+    ]
+  },
+  "episodic": {
+    "means": "Hot in some scenes but not consistently.",
+    "rules": [
+      "R-EC-01"
+    ],
+    "check": [
+      "Which dates were hot (events, fires, harvest burning)"
+    ],
+    "departments": [
+      "Disaster management"
+    ]
+  },
+  "chronic_other": {
+    "means": "Persistently hot without the dense-built or bare-land pattern.",
+    "rules": [
+      "R-CR-01",
+      "R-EC-01"
+    ],
+    "check": [
+      "Local land cover and surface materials"
+    ],
+    "departments": [
+      "Municipal engineering"
+    ]
+  },
+  "not_hot": {
+    "means": "Not among the hotter wards in this city on this analysis.",
+    "rules": [],
+    "check": [],
+    "departments": []
+  },
+  "undetermined": {
+    "means": "Not enough valid data to type this ward.",
+    "rules": [],
+    "check": [
+      "See missing fields"
+    ],
+    "departments": []
+  }
+}
