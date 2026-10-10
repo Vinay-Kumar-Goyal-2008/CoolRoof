@@ -1,0 +1,541 @@
+# =============================================================================
+# CoolRoof parameter registry (Build Spec v0.3 §11)
+#
+# Every number the code uses that is not data or policy lives here, with its
+# evidence status. Code never hard-codes these values (rule 1).
+#
+#   status: V       verified against a source (spec Appendix A)
+#           R       recalled; check the primary doc before relying on it
+#           NV      needs verification — value is null until verified
+#           ASSUME  modelling assumption: a typical, labelled default that a
+#                   reviewer is expected to confirm or change
+#
+# value: null means "not set". Modules turn a null parameter into an
+# "unavailable" output — they never guess (rule 2).
+#
+# Scenario parameters hold {low, base, high} ordered by VALUE (low ≤ base ≤ high).
+# Modules map them to outcome scenarios explicitly (e.g. the low-yield scenario
+# uses the high loss value).
+#
+# added_by_implementation: true marks parameters the spec does not list in §11
+# but which the build needed to avoid hidden constants. All are listed in
+# docs/GAPS.md for review.
+# =============================================================================
+parameters:
+
+  # ---------------------------------------------------------------- M3+4 / M5
+  P-SEASON:
+    value: {start_mmdd: "03-01", end_mmdd: "06-15", years: 3}
+    status: ASSUME
+    source: "Spec M3+4 default hot-season window (Mar 1–Jun 15, years N, N-1, N-2)"
+    modules: [M3+4]
+  P-MAXCLOUD:
+    value: 40
+    unit: "% scene cloud cover"
+    status: ASSUME
+    source: "Spec M3+4: max scene cloud ≤40 % (scene filter only)"
+    modules: [M3+4]
+  P-STQA:
+    value: 3.0
+    unit: K
+    status: ASSUME
+    source: "Typical Landsat C2 ST_QA uncertainty cut-off; confirm against USGS C2 L2 guide (Appendix B item 3)"
+    modules: [M3+4]
+  P-MINOBS:
+    value: 3
+    unit: "valid observations per pixel"
+    status: ASSUME
+    source: "Typical minimum for a seasonal median"
+    modules: [M3+4, M5]
+  P-MODIS-RHO:
+    value: 0.6
+    unit: "Spearman rho"
+    status: ASSUME
+    source: "Acceptance floor for ward-rank agreement with MODIS LST"
+    modules: [M5]
+  P-LST-RANGE:
+    value: {min_c: 0.0, max_c: 75.0}
+    unit: "°C"
+    status: ASSUME
+    source: "Plausible land-surface temperature range for Indian hot-season scenes"
+    modules: [M5]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M6
+  P-REF-RING:
+    value: {inner_km: 10.0, outer_km: 20.0, min_pixels: 100, widen_factor: 1.5, max_widen: 2, fallback_city_pct: 10}
+    unit: km
+    status: ASSUME
+    source: "Spec M6: rural reference ring 10–20 km; widen the ring when it has too few valid pixels, then fall back to a labelled city-percentile baseline"
+    modules: [M6]
+    added_by_implementation: true
+  P-REF-MAXSLOPE:
+    value: 10.0
+    unit: degrees
+    status: ASSUME
+    source: "Exclude steep terrain from the rural reference mask (spec M6)"
+    modules: [M6]
+    added_by_implementation: true
+  P-RELIEF:
+    value: {relief_threshold_m: 150.0, lapse_rate_c_per_km: 6.5}
+    status: ASSUME
+    source: "Elevation adjustment applied only when city relief exceeds the threshold; standard environmental lapse rate (R)"
+    modules: [M6]
+    added_by_implementation: true
+  P-HOTSPOT-PCT:
+    value: {pct: 0.90, min_pixels: 4}
+    unit: "city percentile; minimum connected pixels"
+    status: ASSUME
+    source: "Hotspot = connected pixels above the city 90th percentile; also defines the 'top decile' for persistence"
+    modules: [M6]
+    added_by_implementation: true
+  P-WARD-MINAREA:
+    value: 90000
+    unit: "m²"
+    status: ASSUME
+    source: "Ward smaller than ~100 thermal-native (100 m) pixels is flagged ward_too_small"
+    modules: [M6]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M7
+  P-BLDG-MINAREA:
+    value: 20.0
+    unit: "m²"
+    status: ASSUME
+    source: "Drop footprints below this area (sheds, artefacts)"
+    modules: [M7]
+    added_by_implementation: true
+  P-BLDG-CONF:
+    value: 0.7
+    unit: "footprint confidence"
+    status: ASSUME
+    source: "Google Open Buildings recommends confidence ≥0.7 for most uses (R)"
+    modules: [M7, M10]
+    added_by_implementation: true
+  P-BLDG-INCOMPLETE:
+    value: 0.5
+    unit: "share of the city-median footprint/WorldCover-built ratio"
+    status: ASSUME
+    source: "Ward flagged buildings_incomplete when its footprint coverage of WorldCover built area is below 50 % of the city median"
+    modules: [M7]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M8
+  P-TAU:
+    value: 3.0
+    unit: "°C ΔLST"
+    status: ASSUME
+    source: "Hot-exposure threshold on neighbourhood ΔLST"
+    modules: [M8]
+  P-POPSCALE-CAP:
+    value: {min: 0.5, max: 2.0}
+    status: ASSUME
+    source: "Cap on official/modelled ward population scaling factor k_w (spec M8)"
+    modules: [M8]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M8.5
+  P-STALE-CONTEXT:
+    value: 365
+    unit: days
+    status: ASSUME
+    source: "Default stale_after horizon for satellite-derived context fields"
+    modules: [M8.5]
+    added_by_implementation: true
+  P-CTX-CRITICAL:
+    value: [heat.mean_dlst_c, heat.persistence, population.population, environment.ndvi_mean, built_environment.built_fraction]
+    status: ASSUME
+    source: "Critical fields for context_confidence (weighted minimum)"
+    modules: [M8.5]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M9
+  P-W:
+    value: {a_H: 1.0, a_P: 1.0, a_E: 1.0, a_V: 1.0}
+    status: ASSUME
+    source: "Spec M9: equal weights by default; city profile may override via AHP"
+    modules: [M9]
+  P-W-DIRICHLET:
+    value: {draws: 1000, concentration: 10.0, seed: 42}
+    status: ASSUME
+    source: "Spec M9: 1,000 Dirichlet draws; alpha_i = concentration × normalised weight_i"
+    modules: [M9]
+    added_by_implementation: true
+  P-SMALL-CITY:
+    value: 30
+    unit: wards
+    status: ASSUME
+    source: "Spec M9: use z-score instead of percentile below ~30 wards"
+    modules: [M9]
+    added_by_implementation: true
+  P-F:
+    value: 1.0
+    status: ASSUME
+    source: "Feasibility gate F default (no ward excluded); planner may set per ward"
+    modules: [M9]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M10–M13
+  P-DALB:
+    value: null
+    unit: "Δ albedo"
+    status: NV
+    source: "Cool-roof albedo change — literature range to be curated (Appendix B item 8); calibrate with 10–20 roof pilot"
+    modules: [M11+12+13]
+  P-KCOOL:
+    value: null
+    unit: "°C per unit Δalbedo per unit roof fraction"
+    status: NV
+    source: "Neighbourhood LST sensitivity — literature (Appendix B item 8)"
+    modules: [M11+12+13]
+  P-KIND:
+    value: null
+    unit: "°C indoor per unit Δalbedo"
+    status: NV
+    source: "Top-floor indoor temperature sensitivity — literature (Appendix B item 8)"
+    modules: [M11+12+13]
+  P-PHI:
+    value: {low: 0.25, base: 0.5, high: 1.0}
+    unit: "share of building population protected"
+    status: ASSUME
+    source: "Spec M11–13: φ = 1/floors when known, else this scenario"
+    modules: [M11+12+13]
+  P-CM2:
+    value: null
+    unit: "₹ per m² coating"
+    status: NV
+    source: "Local coating cost schedule required (Appendix B item 8). Without it BC ratio is refused."
+    modules: [M11+12+13]
+  P-PREP:
+    value: {low: 0.10, base: 0.15, high: 0.20}
+    unit: "fraction of coating cost"
+    status: ASSUME
+    source: "Surface preparation overhead"
+    modules: [M11+12+13]
+
+  # ---------------------------------------------------------------- M15
+  P-THETA-HEAT:
+    value: {hi: 0.75, mid: 0.50, lo: 0.25}
+    unit: "city percentile"
+    status: ASSUME
+    source: "Spec M15 defaults q75 / q50 / q25"
+    modules: [M15]
+
+  # ---------------------------------------------------------------- M16
+  P-DRIVER-BLOCK:
+    value: 3
+    unit: "pixels per block side"
+    status: ASSUME
+    source: "Spec M16: N×N blocks, N=3 ≈ native thermal resolution"
+    modules: [M16]
+    added_by_implementation: true
+  P-DRIVER-CV:
+    value: {tile_km: 2.0, buffer_km: 0.5, bootstrap: 200, vif_max: 5.0}
+    status: ASSUME
+    source: "Spec M16 spatial CV with 2 km tiles; VIF ≤5 rule of thumb"
+    modules: [M16]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M17
+  P-THETA-RULE:
+    value: {prio: 0.75, roof: 0.50, sol: 0.50, exp: 0.75, bare: 0.75, few_roofs: 0.25}
+    unit: "city percentile"
+    status: ASSUME
+    source: "Spec M17 thresholds θ_prio, θ_roof, θ_sol, θ_exp, θ_bare"
+    modules: [M17]
+
+  P-BUILT-DENSE:
+    value: 0.5
+    unit: "built fraction"
+    status: ASSUME
+    source: "Wards at or above this built share count as 'dense' built form when matching cooling options"
+    modules: [M17]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M20+21
+  P-COVER:
+    value: 3000
+    unit: m
+    status: ASSUME
+    source: "Facility coverage radius (straight-line)"
+    modules: [M20+21]
+
+  # ---------------------------------------------------------------- M22
+  P-FIRE-POLL:
+    value: 30
+    unit: minutes
+    status: ASSUME
+    source: "FIRMS polling interval within spec range 15–60 min"
+    modules: [M22]
+  P-FIRE-CONF:
+    value: high
+    status: ASSUME
+    source: "Alert only on high normalised confidence (spec M22 alert rule)"
+    modules: [M22]
+  P-FIRE-RADIUS:
+    value: 5000
+    unit: m
+    status: ASSUME
+    source: "Alert radius around wards, hospitals and protected areas"
+    modules: [M22]
+  P-FIRE-CLUSTER:
+    value: {viirs_m: 375, modis_m: 1000}
+    unit: m
+    status: R
+    source: "Cluster detections per overpass within native pixel scale (VIIRS 375 m, MODIS 1 km)"
+    modules: [M22]
+    added_by_implementation: true
+  P-FIRE-PERSIST:
+    value: {days: 5, window_days: 30, radius_m: 500}
+    status: ASSUME
+    source: "Persistent source (kiln, flare) = detections on ≥5 separate days within 30 days at the same spot"
+    modules: [M22]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M23
+  P-PA-BUFFER:
+    value: 2000
+    unit: m
+    status: ASSUME
+    source: "Protected-area buffer for 'near' fire and indicator windows"
+    modules: [M23]
+  P-VEG-DROP:
+    value: 0.2
+    unit: "NDVI drop"
+    status: ASSUME
+    source: "Tree-loss proxy when Hansen GFC is unavailable"
+    modules: [M23]
+  P-HPI-W:
+    value: {fire: 0.25, loss: 0.25, veg: 0.25, heat: 0.25}
+    status: ASSUME
+    source: "Spec M23: equal weights by default"
+    modules: [M23]
+  P-HPI-THETA:
+    value: {moderate: 0.33, high: 0.66}
+    status: ASSUME
+    source: "HPI class cut-offs"
+    modules: [M23]
+  P-LOSS-ALERT:
+    value: 1.0
+    unit: "% of tree area lost in latest year"
+    status: ASSUME
+    source: "PA_HABITAT_PRESSURE_RISE trigger"
+    modules: [M23]
+
+  # ---------------------------------------------------------------- M24
+  P-TREND-MIN:
+    value: 8
+    unit: years
+    status: ASSUME
+    source: "Spec M24 default"
+    modules: [M24]
+  P-TREND-ALPHA:
+    value: 0.05
+    unit: "Mann–Kendall p-value"
+    status: ASSUME
+    source: "Significance level for adverse trends"
+    modules: [M24, M23]
+    added_by_implementation: true
+  P-BUILT-NA:
+    value: 0.8
+    unit: "built fraction"
+    status: ASSUME
+    source: "Wards above this built fraction are not_applicable for degradation"
+    modules: [M24]
+  P-COVMIN:
+    value: 0.5
+    unit: "valid-pixel share"
+    status: ASSUME
+    source: "Year marked missing below this valid coverage"
+    modules: [M24]
+
+  # ---------------------------------------------------------------- M25
+  P-TILT:
+    value: latitude
+    unit: degrees
+    status: ASSUME
+    source: "Fixed tilt equal to site latitude (rounded), common rule of thumb"
+    modules: [M25]
+  P-AZ:
+    value: 180
+    unit: "degrees (compass, 180 = south)"
+    status: ASSUME
+    source: "South-facing array in the northern hemisphere"
+    modules: [M25]
+  P-GAMMA:
+    value: -0.004
+    unit: "per K (power temperature coefficient)"
+    status: ASSUME
+    source: "Typical crystalline-silicon module temperature coefficient (-0.4 %/K); used only in the NASA POWER + pvlib fallback"
+    modules: [M25]
+    added_by_implementation: true
+  P-LOSS:
+    value: {low: 0.10, base: 0.14, high: 0.20}
+    unit: "system loss fraction"
+    status: ASSUME
+    source: "PVGIS default system loss 14 % (R) for base; ±scenario"
+    modules: [M25]
+  P-SOLAR-BAND:
+    value: {min_kwh_per_kwp: 1000, max_kwh_per_kwp: 2000}
+    unit: "kWh/kWp/yr"
+    status: ASSUME
+    source: "Plausible-band check for Indian specific yield"
+    modules: [M25]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M26
+  P-U:
+    value: {low: 0.50, base: 0.65, high: 0.80}
+    unit: "usable fraction of roof area"
+    status: ASSUME
+    source: "Setbacks, tanks, stairs, shading"
+    modules: [M26]
+  P-KWMIN:
+    value: 1.0
+    unit: kW
+    status: ASSUME
+    source: "Smallest system considered (PM Surya Ghar slabs start at 1 kW, F2)"
+    modules: [M26]
+  P-OUTLINE-RATIO:
+    value: 1.25
+    unit: "max ratio user/footprint area"
+    status: ASSUME
+    source: "Flag outline_changed above this ratio (either direction)"
+    modules: [M26]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M27+28
+  P-AKW:
+    value: 10.0
+    unit: "m² per kWp"
+    status: ASSUME
+    source: "Common rule of thumb ~10 m² shadow-free area per kWp (R, MNRE guidance)"
+    modules: [M27+28]
+  P-KWSTEP:
+    value: 1.0
+    unit: kW
+    status: ASSUME
+    source: "Spec M27+28 default"
+    modules: [M27+28]
+  P-DEG:
+    value: 0.006
+    unit: "fraction per year"
+    status: ASSUME
+    source: "Typical crystalline-Si annual degradation in hot climates"
+    modules: [M27+28]
+  P-LID:
+    value: 0.0
+    unit: fraction
+    status: ASSUME
+    source: "Spec M27+28 default first-year loss 0"
+    modules: [M27+28]
+
+  # ---------------------------------------------------------------- M29
+  P-STALE-POLICY:
+    value: 30
+    unit: days
+    status: ASSUME
+    source: "Spec §11 example: policy review warning after 30 days"
+    modules: [M29]
+  P-HARD-POLICY:
+    value: 90
+    unit: days
+    status: ASSUME
+    source: "Spec §11 example: policy blocks PDF after 90 days"
+    modules: [M29]
+
+  # ---------------------------------------------------------------- M30+31
+  P-GCOST:
+    value: null
+    unit: "₹ per kW gross installed cost"
+    status: NV
+    source: "Gross cost per kW range — must come from a cited vendor/DISCOM schedule. User-supplied gross cost is required for the payback headline."
+    modules: [M30+31]
+  P-SELF:
+    value: 0.5
+    unit: "self-consumed share of generation"
+    status: ASSUME
+    source: "Net-billing self-consumption share"
+    modules: [M30+31]
+  P-ESC:
+    value: 0.03
+    unit: "tariff escalation per year (g)"
+    status: ASSUME
+    source: "Nominal tariff escalation"
+    modules: [M30+31]
+  P-OM:
+    value: 0.01
+    unit: "fraction of gross cost per year"
+    status: ASSUME
+    source: "Annual O&M as a share of gross cost (avoids inventing a ₹ figure)"
+    modules: [M30+31]
+  P-INV:
+    value: {year: 12, cost_fraction: 0.10}
+    status: ASSUME
+    source: "One inverter replacement at year 12 costing 10 % of gross cost"
+    modules: [M30+31]
+  P-HORIZON:
+    value: 25
+    unit: years
+    status: ASSUME
+    source: "Payback simulation horizon H"
+    modules: [M30+31]
+    added_by_implementation: true
+
+  # ---------------------------------------------------------------- M37
+  P-ALERT-RATE:
+    value: {per_ward_per_day: 3, per_city_per_hour: 20}
+    status: ASSUME
+    source: "Alert rate limits; severity escalation always passes"
+    modules: [M37]
+
+  # ---------------------------------------------------------------- M43
+  P-HD-T:
+    value: 3.0
+    unit: "°C Tmax anomaly"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-Z:
+    value: 1.0
+    unit: "σ of Z500 climatology"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-DAYS:
+    value: 3
+    unit: "consecutive signal days"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-BOX:
+    value: 5.0
+    unit: "± degrees around city centroid"
+    status: ASSUME
+    source: "Spec M43 example ±5°"
+    modules: [M43]
+  P-HD-P1:
+    value: 0.2
+    unit: "event probability for 'watch'"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-P2:
+    value: 0.4
+    unit: "event probability for 'elevated'"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-P3:
+    value: 0.7
+    unit: "event probability for 'high'"
+    status: ASSUME
+    source: "Spec M43; tune by hindcast"
+    modules: [M43]
+  P-HD-HORIZON:
+    value: 10
+    unit: days
+    status: ASSUME
+    source: "Spec M43: 1–10 days ahead"
+    modules: [M43]
+    added_by_implementation: true

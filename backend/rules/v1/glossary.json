@@ -1,0 +1,26 @@
+{
+  "LST": {
+    "en": "surface temperature at a late-morning satellite pass",
+    "hi": "सुबह के उपग्रह गुज़रने के समय की सतह का तापमान"
+  },
+  "cool roof": {
+    "en": "cool roof",
+    "hi": "कूल रूफ"
+  },
+  "subsidy": {
+    "en": "subsidy",
+    "hi": "सब्सिडी"
+  },
+  "payback": {
+    "en": "payback period",
+    "hi": "लागत वापसी अवधि"
+  },
+  "DISCOM": {
+    "en": "electricity distribution company (DISCOM)",
+    "hi": "बिजली वितरण कंपनी (DISCOM)"
+  },
+  "net metering": {
+    "en": "net metering",
+    "hi": "नेट मीटरिंग"
+  }
+}

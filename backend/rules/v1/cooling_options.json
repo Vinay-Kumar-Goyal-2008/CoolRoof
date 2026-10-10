@@ -1,0 +1,86 @@
+[
+  {
+    "id": "CO-REFLECTIVE-PAINT",
+    "name_i18n": {
+      "en": "Reflective roof paint",
+      "hi": "परावर्तक छत पेंट"
+    },
+    "type": "passive",
+    "suits": {
+      "heat_type": [
+        "dense_built_low_green",
+        "chronic_other"
+      ],
+      "roof_type": [
+        "concrete",
+        "metal"
+      ],
+      "built_form": [
+        "dense"
+      ]
+    },
+    "cost_band": "low",
+    "capex_range_inr": null,
+    "evidence_ref": [
+      "EV-COOLROOF-LIT"
+    ],
+    "caveats": [
+      "Cost needs a cited local schedule"
+    ]
+  },
+  {
+    "id": "CO-SHADE-NET",
+    "name_i18n": {
+      "en": "Shading nets",
+      "hi": "छाया जाल"
+    },
+    "type": "passive",
+    "suits": {
+      "heat_type": [
+        "dense_built_low_green",
+        "open_bare_or_industrial"
+      ],
+      "roof_type": [
+        "metal",
+        "concrete"
+      ],
+      "built_form": [
+        "dense",
+        "industrial"
+      ]
+    },
+    "cost_band": "low",
+    "capex_range_inr": null,
+    "evidence_ref": [
+      "EV-AIDMI-HEAT"
+    ],
+    "caveats": []
+  },
+  {
+    "id": "CO-COMMUNITY-COOLING",
+    "name_i18n": {
+      "en": "Community cooling centre",
+      "hi": "सामुदायिक शीतलन केंद्र"
+    },
+    "type": "community",
+    "suits": {
+      "heat_type": [
+        "dense_built_low_green",
+        "chronic_other",
+        "episodic"
+      ],
+      "roof_type": [],
+      "built_form": [
+        "dense"
+      ]
+    },
+    "cost_band": "med",
+    "capex_range_inr": null,
+    "evidence_ref": [
+      "EV-AIDMI-HEAT"
+    ],
+    "caveats": [
+      "Needs a suitable public building"
+    ]
+  }
+]

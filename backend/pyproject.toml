@@ -1,0 +1,148 @@
+[project]
+name = "coolroof"
+version = "0.1.0"
+description = "CoolRoof Planner + Heat Intelligence + SuryaCheck — geospatial decision support for urban heat, cool roofs and rooftop solar."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "TBD" }
+dependencies = [
+    # API
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "mangum>=0.19",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+    # Config / logging
+    "pyyaml>=6.0",
+    "structlog>=24.1",
+    "python-dotenv>=1.0",
+    "jsonschema>=4.22",
+    # Geo (Windows wheels bundle GDAL — no system install needed)
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pyarrow>=16",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "rasterio>=1.4",
+    "pyogrio>=0.9",
+    "geopandas>=1.0",
+    "exactextract>=0.2",
+    "duckdb>=1.0",
+    "h3>=4.0",
+    "pystac-client>=0.8",
+    "planetary-computer>=1.0",
+    # Stats / ML
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "statsmodels>=0.14",
+    "pymannkendall>=1.4",
+    "xgboost>=2.1",
+    "shap>=0.46",
+    "pvlib>=0.11",
+    "xarray>=2024.6",
+    # PDF (fpdf2 + HarfBuzz shaping replaces WeasyPrint on Windows)
+    "fpdf2>=2.8",
+    "uharfbuzz>=0.40",
+    "pymupdf>=1.24",
+    "jinja2>=3.1",
+    # Scheduling / AWS
+    "apscheduler>=3.10,<4",
+    "boto3>=1.34",
+    "pmtiles>=3.8.1",
+    "pillow>=12.3.0",
+    "pyjwt>=2.15.1",
+    "cryptography>=50.0.2",
+]
+
+[project.optional-dependencies]
+agent = [
+    "strands-agents>=1.0",
+    "anthropic>=0.40",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "mypy>=1.11",
+    "ruff>=0.6",
+    "poethepoet>=0.28",
+    "honcho>=2.0",
+    "types-PyYAML",
+    "pandas-stubs",
+    "boto3-stubs[s3,dynamodb,sns,polly,secretsmanager]",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["packages"]
+
+# ---------------------------------------------------------------- tasks (replace GNU make)
+[tool.poe.tasks]
+api = { cmd = "uvicorn packages.api.app:app --reload --port 8000", help = "Run the backend API" }
+frontend = { cmd = "npm --prefix ../frontend run dev", help = "Run the Next.js frontend dev server" }
+dev = { cmd = "honcho -f ../Procfile -d .. start", help = "Run API + frontend together (root Procfile)" }
+seed = { cmd = "python -m scripts.seed", help = "Load seed policy records into the local DocStore" }
+fixtures = { cmd = "python -m scripts.make_mini_city", help = "Regenerate the synthetic mini-city fixture" }
+pipeline-mini = { cmd = "python -m scripts.run_pipeline --city mini_city --date 2026-10-10", help = "Run the heat pipeline on the mini city" }
+test = { cmd = "pytest", help = "Run all tests" }
+test-unit = { cmd = "pytest tests/unit", help = "Unit tests" }
+test-property = { cmd = "pytest tests/property", help = "Property-based tests" }
+test-golden = { cmd = "pytest tests/golden", help = "Golden fixture tests" }
+lint = { cmd = "ruff check packages scripts tests", help = "Lint" }
+format = { cmd = "ruff format packages scripts tests", help = "Format" }
+typecheck = { cmd = "mypy packages", help = "Type check (strict)" }
+ci = { sequence = ["lint", "typecheck", "test"], help = "All CI gates" }
+
+# ---------------------------------------------------------------- tooling
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "PTH", "C4", "PIE", "T20"]
+ignore = ["RUF001", "RUF002", "RUF003", "E501"]  # Devanagari / ₹ characters are intentional
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20", "E501", "C408"]
+"scripts/**" = ["T20", "E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+
+# The numerical pipeline works on pandas/geopandas objects whose stubs are imprecise; keep
+# signatures and attribute checks, drop the stub-noise error classes there.
+[[tool.mypy.overrides]]
+module = ["packages.pipeline.*", "packages.services.m35_pdf", "packages.services.repository"]
+disable_error_code = ["operator", "arg-type", "index", "assignment", "attr-defined",
+                      "union-attr", "dict-item", "no-any-return", "no-untyped-call",
+                      "unused-ignore", "call-overload", "misc", "return-value"]
+
+[[tool.mypy.overrides]]
+module = [
+    "geopandas.*", "shapely.*", "rasterio.*", "pyogrio.*", "exactextract.*", "h3.*",
+    "pystac_client.*", "planetary_computer.*", "pymannkendall.*", "pvlib.*", "shap.*",
+    "xgboost.*", "sklearn.*", "statsmodels.*", "scipy.*", "fpdf.*", "uharfbuzz.*",
+    "fitz.*", "pymupdf.*", "mangum.*", "apscheduler.*", "strands.*", "duckdb.*",
+    "pyproj.*", "xarray.*", "jsonschema.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --import-mode=importlib"
+pythonpath = ["."]
+markers = [
+    "network: test needs internet access (skipped by default)",
+    "slow: slow test",
+]
+filterwarnings = ["ignore::DeprecationWarning"]

@@ -1,0 +1,20 @@
+{
+  "synthetic": true,
+  "dataset_id": "mini_city_synthetic_v1",
+  "seed": 20261010,
+  "crs": "EPSG:32643",
+  "planted": {
+    "episodic_ward": "W08",
+    "buildings_incomplete_ward": "W09",
+    "degradation": {
+      "W03": "strong",
+      "W11": "moderate",
+      "W06": "weak"
+    },
+    "heatdome": {
+      "first_day": 4,
+      "duration": 4
+    },
+    "cloudy_scene": "LC08_MINI_20250418"
+  }
+}

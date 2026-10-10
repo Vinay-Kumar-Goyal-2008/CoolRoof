@@ -1,0 +1,110 @@
+{
+  "type": "Feature",
+  "id": "LC08_MINI_20250418",
+  "collection": "landsat-c2-l2",
+  "properties": {
+    "datetime": "2025-04-18T05:20:00Z",
+    "platform": "landsat-8",
+    "eo:cloud_cover": 18.0,
+    "proj:epsg": 32643,
+    "synthetic": true
+  },
+  "assets": {
+    "lwir11": {
+      "href": "ST_B10.tif",
+      "raster:bands": [
+        {
+          "scale": 0.00341802,
+          "offset": 149.0,
+          "nodata": 0,
+          "unit": "kelvin"
+        }
+      ]
+    },
+    "qa_pixel": {
+      "href": "QA_PIXEL.tif",
+      "raster:bands": [
+        {
+          "nodata": 1
+        }
+      ]
+    },
+    "qa": {
+      "href": "ST_QA.tif",
+      "raster:bands": [
+        {
+          "scale": 0.01,
+          "offset": 0,
+          "nodata": -9999,
+          "unit": "kelvin"
+        }
+      ]
+    },
+    "blue": {
+      "href": "SR_B2.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    },
+    "green": {
+      "href": "SR_B3.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    },
+    "red": {
+      "href": "SR_B4.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    },
+    "nir08": {
+      "href": "SR_B5.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    },
+    "swir16": {
+      "href": "SR_B6.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    },
+    "swir22": {
+      "href": "SR_B7.tif",
+      "raster:bands": [
+        {
+          "scale": 2.75e-05,
+          "offset": -0.2,
+          "nodata": 0,
+          "data_type": "uint16"
+        }
+      ]
+    }
+  }
+}

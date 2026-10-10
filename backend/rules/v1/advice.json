@@ -1,0 +1,50 @@
+{
+  "status": "NV - needs review by a native Hindi speaker and the local health authority",
+  "lines": {
+    "hydrate": {
+      "en": "Drink water often, even if you do not feel thirsty.",
+      "hi": "प्यास न लगने पर भी बार-बार पानी पिएँ।"
+    },
+    "avoid_midday": {
+      "en": "Avoid going out in the hottest part of the day.",
+      "hi": "दिन के सबसे गर्म समय में बाहर जाने से बचें।"
+    },
+    "cool_home": {
+      "en": "Keep your home cool: use curtains, ventilation and shade.",
+      "hi": "घर को ठंडा रखें: पर्दे, हवा के आवागमन और छाया का उपयोग करें।"
+    },
+    "check_vulnerable": {
+      "en": "Check on older neighbours, young children and people who are ill.",
+      "hi": "बुज़ुर्ग पड़ोसियों, छोटे बच्चों और बीमार लोगों का हाल पूछें।"
+    },
+    "cooling_point": {
+      "en": "Use a public cooling point if your home is very hot.",
+      "hi": "घर बहुत गर्म हो तो सार्वजनिक शीतलन स्थल का उपयोग करें।"
+    },
+    "schools": {
+      "en": "Schools and event organisers should plan shade, water and shorter outdoor time.",
+      "hi": "स्कूल और आयोजक छाया, पानी और बाहर कम समय की योजना बनाएँ।"
+    }
+  },
+  "by_type": {
+    "heatwave_relay": [
+      "hydrate",
+      "avoid_midday",
+      "check_vulnerable"
+    ],
+    "heatdome_forecast": [
+      "hydrate",
+      "avoid_midday",
+      "cool_home",
+      "check_vulnerable"
+    ],
+    "exam_event": [
+      "schools",
+      "hydrate",
+      "avoid_midday"
+    ],
+    "fire_confirmed": [
+      "avoid_midday"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Test output
+test-results/
+playwright-report/
+blob-report/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Secrets
+.env
+.env.*
+!.env.example

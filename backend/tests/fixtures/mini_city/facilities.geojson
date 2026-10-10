@@ -1,0 +1,28 @@
+{
+"type": "FeatureCollection",
+"name": "facilities",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W01" }, "geometry": { "type": "Point", "coordinates": [ 73.822791869345323, 18.532439916691846 ] } },
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W04" }, "geometry": { "type": "Point", "coordinates": [ 73.862560999046238, 18.535394512326764 ] } },
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W06" }, "geometry": { "type": "Point", "coordinates": [ 73.838523114452826, 18.517626794248837 ] } },
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W10" }, "geometry": { "type": "Point", "coordinates": [ 73.83718468249883, 18.505419075292927 ] } },
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W12" }, "geometry": { "type": "Point", "coordinates": [ 73.864169938873516, 18.506938520956268 ] } },
+{ "type": "Feature", "properties": { "kind": "hospital", "name": "Hospital W02" }, "geometry": { "type": "Point", "coordinates": [ 73.841291760863001, 18.528487774376607 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 1" }, "geometry": { "type": "Point", "coordinates": [ 73.818547633426476, 18.529702448152154 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 2" }, "geometry": { "type": "Point", "coordinates": [ 73.837001464684064, 18.532527910826971 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 3" }, "geometry": { "type": "Point", "coordinates": [ 73.849799235842084, 18.531250746341328 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 4" }, "geometry": { "type": "Point", "coordinates": [ 73.824296219020468, 18.520249853777809 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 5" }, "geometry": { "type": "Point", "coordinates": [ 73.832802975019646, 18.523013555732653 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 6" }, "geometry": { "type": "Point", "coordinates": [ 73.851319764964671, 18.516349463434352 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 7" }, "geometry": { "type": "Point", "coordinates": [ 73.854116305509478, 18.52314395344138 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 8" }, "geometry": { "type": "Point", "coordinates": [ 73.865510301976869, 18.519146151767227 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 9" }, "geometry": { "type": "Point", "coordinates": [ 73.82015443504568, 18.502602648354237 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 10" }, "geometry": { "type": "Point", "coordinates": [ 73.832950022698995, 18.501326504357976 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 11" }, "geometry": { "type": "Point", "coordinates": [ 73.851374035647495, 18.508216765986941 ] } },
+{ "type": "Feature", "properties": { "kind": "school", "name": "School 12" }, "geometry": { "type": "Point", "coordinates": [ 73.869879694813861, 18.502906178943238 ] } },
+{ "type": "Feature", "properties": { "kind": "cooling_point", "name": "Cooling centre W04" }, "geometry": { "type": "Point", "coordinates": [ 73.865420891872034, 18.532700694907227 ] } },
+{ "type": "Feature", "properties": { "kind": "cooling_point", "name": "Cooling centre W10" }, "geometry": { "type": "Point", "coordinates": [ 73.83718468249883, 18.505419075292927 ] } },
+{ "type": "Feature", "properties": { "kind": "cooling_point", "name": "Cooling centre W12" }, "geometry": { "type": "Point", "coordinates": [ 73.865599634883822, 18.50559158880241 ] } }
+]
+}

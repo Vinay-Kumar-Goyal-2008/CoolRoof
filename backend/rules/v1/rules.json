@@ -1,0 +1,208 @@
+[
+  {
+    "id": "R-CR-01",
+    "intervention": "Ward cool-roof programme",
+    "required_fields": [
+      "heat.mean_dlst_c",
+      "built_environment.eligible_roof_area_m2"
+    ],
+    "evidence_ref": [
+      "EV-COOLROOF-LIT"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Cool-roof coefficients and costs are placeholders until a 10-20 roof pilot",
+      "LST is the surface temperature at a late-morning satellite pass"
+    ],
+    "audience": "staff",
+    "quantified": true,
+    "text": {
+      "en": "Consider a cool-roof programme in {ward}: high-priority ward with a large share of eligible roof area.",
+      "hi": "{ward} में कूल-रूफ कार्यक्रम पर विचार करें: उच्च प्राथमिकता वाला वार्ड जहाँ पात्र छत क्षेत्र अधिक है।"
+    }
+  },
+  {
+    "id": "R-SO-01",
+    "intervention": "Rooftop solar opportunity (SuryaCheck)",
+    "required_fields": [
+      "built_environment.eligible_roof_area_m2"
+    ],
+    "evidence_ref": [
+      "EV-PMSG-POLICY"
+    ],
+    "evidence_grade": "A",
+    "caveats": [
+      "Final eligibility is decided on pmsuryaghar.gov.in"
+    ],
+    "audience": "public",
+    "quantified": true,
+    "text": {
+      "en": "Households in {ward} can check rooftop solar and the PM Surya Ghar subsidy with SuryaCheck.",
+      "hi": "{ward} के परिवार सूर्याचेक से रूफटॉप सोलर और पीएम सूर्य घर सब्सिडी जाँच सकते हैं।"
+    }
+  },
+  {
+    "id": "R-CP-01",
+    "intervention": "Public cooling-point siting",
+    "required_fields": [
+      "population.exposed_population",
+      "built_environment.eligible_roof_area_m2"
+    ],
+    "evidence_ref": [
+      "EV-AIDMI-HEAT"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Candidate public facilities must be identified on the ground"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "Many people are exposed to heat in {ward} with few eligible roofs: consider a public cooling point.",
+      "hi": "{ward} में बहुत लोग गर्मी के संपर्क में हैं और पात्र छतें कम हैं: सार्वजनिक शीतलन स्थल पर विचार करें।"
+    }
+  },
+  {
+    "id": "R-GR-01",
+    "intervention": "Green cover and shade on open land",
+    "required_fields": [
+      "environment.ndvi_mean",
+      "environment.bare_fraction"
+    ],
+    "evidence_ref": [
+      "EV-AIDMI-HEAT"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Needs an on-ground land availability check"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "{ward} has low green cover and bare land: consider tree planting and shade.",
+      "hi": "{ward} में हरियाली कम है और खाली ज़मीन है: पेड़ लगाने और छाया पर विचार करें।"
+    }
+  },
+  {
+    "id": "R-EC-01",
+    "intervention": "Economical cooling options for this locality",
+    "required_fields": [
+      "heat.mean_dlst_c"
+    ],
+    "evidence_ref": [
+      "EV-AIDMI-HEAT"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Costs are bands only until cited"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "Low-cost cooling options that suit {ward} are listed below.",
+      "hi": "{ward} के लिए उपयुक्त कम-लागत शीतलन विकल्प नीचे दिए गए हैं।"
+    }
+  },
+  {
+    "id": "R-HD-01",
+    "intervention": "Heat-dome forecast signal relay",
+    "required_fields": [
+      "heat.heatdome_risk"
+    ],
+    "evidence_ref": [
+      "EV-HEAT-PLAN"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Forecast signal, not an official warning; official IMD warnings take precedence"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "A heat-dome forecast signal (not an official warning) covers {ward}: review readiness.",
+      "hi": "{ward} के लिए हीट-डोम पूर्वानुमान संकेत (आधिकारिक चेतावनी नहीं) है: तैयारी की समीक्षा करें।"
+    }
+  },
+  {
+    "id": "R-EX-01",
+    "intervention": "Exam and event heat advisory",
+    "required_fields": [
+      "heat.heatdome_risk"
+    ],
+    "evidence_ref": [
+      "EV-HEAT-PLAN"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Needs school data (not loaded)"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "Schools in {ward} may need heat precautions during the forecast signal.",
+      "hi": "पूर्वानुमान संकेत के दौरान {ward} के स्कूलों में गर्मी से बचाव ज़रूरी हो सकता है।"
+    }
+  },
+  {
+    "id": "R-RD-01",
+    "intervention": "Facility readiness check",
+    "required_fields": [
+      "population.exposed_population"
+    ],
+    "evidence_ref": [
+      "EV-HEALTH-READINESS"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Prompts ask officers to confirm readiness; no bed, stock or demand data is used"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "High heat exposure in {ward} during a warning or forecast signal: ask health and utility officers to confirm readiness.",
+      "hi": "चेतावनी या पूर्वानुमान संकेत के दौरान {ward} में गर्मी का संपर्क अधिक है: स्वास्थ्य और बिजली अधिकारियों से तैयारी की पुष्टि करने को कहें।"
+    }
+  },
+  {
+    "id": "R-FR-01",
+    "intervention": "Heat-linked fire-risk advisory",
+    "required_fields": [
+      "built_environment.built_fraction"
+    ],
+    "evidence_ref": [
+      "EV-FIRE-RISK"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Qualitative; not a fire prediction",
+      "Fire services decide any public message"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "Hot spell with dense building or dry vegetation near {ward}: advise fire services and the electricity utility to watch for overload and dry-vegetation fires.",
+      "hi": "{ward} के पास घनी इमारतों या सूखी वनस्पति के साथ गर्म दौर: दमकल सेवा और बिजली कंपनी को ओवरलोड और सूखी वनस्पति की आग पर नज़र रखने की सलाह दें।"
+    }
+  },
+  {
+    "id": "R-DG-01",
+    "intervention": "Land-degradation field check",
+    "required_fields": [
+      "environment.degradation_signal"
+    ],
+    "evidence_ref": [
+      "EV-LAND-DEGRADATION"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Indicator, not diagnosis",
+      "Vegetation also responds to rainfall"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "The land-degradation indicator for {ward} is moderate or strong: schedule a field check before acting.",
+      "hi": "{ward} के लिए भूमि क्षरण संकेतक मध्यम या तीव्र है: कार्रवाई से पहले क्षेत्र-निरीक्षण तय करें।"
+    }
+  }
+]

@@ -1,0 +1,86 @@
+{
+  "type": "checklist",
+  "state": "ALL",
+  "discom": "ALL",
+  "version": "generic-1",
+  "effective_date": "2024-02-29",
+  "reviewed_on": "2026-10-08",
+  "status": "R — every item needs an official check (F6 is NV)",
+  "items": [
+    {
+      "id": "register",
+      "title_i18n": {"en": "Register on the national portal", "hi": "राष्ट्रीय पोर्टल पर पंजीकरण करें"},
+      "detail_i18n": {
+        "en": "Create an account at pmsuryaghar.gov.in with your state, DISCOM and consumer number.",
+        "hi": "pmsuryaghar.gov.in पर अपना राज्य, बिजली वितरण कंपनी और उपभोक्ता संख्या देकर खाता बनाएँ।"
+      },
+      "documents": ["electricity_bill"],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    },
+    {
+      "id": "apply",
+      "title_i18n": {"en": "Apply for rooftop solar", "hi": "रूफटॉप सोलर के लिए आवेदन करें"},
+      "detail_i18n": {
+        "en": "Submit the rooftop solar application on the portal. This assistant never submits it for you.",
+        "hi": "पोर्टल पर रूफटॉप सोलर आवेदन जमा करें। यह सहायक आपकी ओर से आवेदन जमा नहीं करता।"
+      },
+      "documents": [],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    },
+    {
+      "id": "feasibility",
+      "title_i18n": {"en": "Wait for DISCOM feasibility approval", "hi": "बिजली कंपनी की व्यवहार्यता स्वीकृति की प्रतीक्षा करें"},
+      "detail_i18n": {
+        "en": "Your DISCOM checks the connection before installation.",
+        "hi": "इंस्टॉलेशन से पहले आपकी बिजली कंपनी कनेक्शन की जाँच करती है।"
+      },
+      "documents": [],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    },
+    {
+      "id": "vendor",
+      "title_i18n": {"en": "Install through a registered vendor", "hi": "पंजीकृत विक्रेता से इंस्टॉल करवाएँ"},
+      "detail_i18n": {
+        "en": "Choose a vendor listed on the portal. Vendor and domestic-content rules must be confirmed on the portal.",
+        "hi": "पोर्टल पर सूचीबद्ध विक्रेता चुनें। विक्रेता और घरेलू सामग्री के नियम पोर्टल पर ही पुष्टि करें।"
+      },
+      "documents": [],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    },
+    {
+      "id": "net_meter",
+      "title_i18n": {"en": "Apply for the net meter and commissioning", "hi": "नेट मीटर और कमीशनिंग के लिए आवेदन करें"},
+      "detail_i18n": {
+        "en": "After installation, submit plant details for net-meter installation and DISCOM inspection.",
+        "hi": "इंस्टॉलेशन के बाद, नेट मीटर लगवाने और बिजली कंपनी के निरीक्षण के लिए संयंत्र का विवरण जमा करें।"
+      },
+      "documents": [],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    },
+    {
+      "id": "subsidy_release",
+      "title_i18n": {"en": "Submit bank details for the subsidy", "hi": "सब्सिडी के लिए बैंक विवरण पोर्टल पर जमा करें"},
+      "detail_i18n": {
+        "en": "Bank details go on the official portal only — never share them with this assistant.",
+        "hi": "बैंक विवरण केवल आधिकारिक पोर्टल पर दें — इस सहायक के साथ कभी साझा न करें।"
+      },
+      "documents": [],
+      "applies_to": ["residential", "ghs_rwa"],
+      "source_url": "https://pmsuryaghar.gov.in",
+      "verification": "needs_official_check"
+    }
+  ],
+  "document_labels": {
+    "electricity_bill": {"en": "Latest electricity bill", "hi": "नवीनतम बिजली बिल"}
+  }
+}

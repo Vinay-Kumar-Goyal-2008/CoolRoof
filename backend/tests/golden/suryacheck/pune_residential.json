@@ -1,0 +1,142 @@
+{
+  "status": "complete",
+  "input_hash": "09e3f4f8f9b88ce136c6f816e8b4dc7fcaa236a96f50f633bce126f86472ef23",
+  "steps": {
+    "solar": "ok",
+    "roof": "ok",
+    "system": "ok",
+    "subsidy": "ok",
+    "payback": "ok"
+  },
+  "missing": [],
+  "next_questions": [],
+  "solar": {
+    "specific_yield_kwh_per_kwp": {
+      "low": 1274,
+      "base": 1369,
+      "high": 1433
+    },
+    "monthly_loss_free_kwh_per_kwp": [
+      138.0,
+      140.0,
+      160.0,
+      158.0,
+      157.0,
+      120.0,
+      98.0,
+      102.0,
+      118.0,
+      136.0,
+      133.0,
+      132.0
+    ],
+    "source": "fixture_pvgis:18.5,73.9",
+    "tilt_deg": 19,
+    "azimuth_deg": 180.0,
+    "assumptions": [
+      "P-LOSS",
+      "P-TILT",
+      "P-AZ"
+    ]
+  },
+  "roof": {
+    "suitability": "suitable",
+    "usable_area_m2": {
+      "low": 35.0,
+      "base": 45.5,
+      "high": 56.0
+    },
+    "area_class": "ASSUMPTION",
+    "assumptions": [
+      "P-U"
+    ]
+  },
+  "system": {
+    "kw_recommended": 3.0,
+    "kw_max_continuous": 3.51,
+    "limiting_factor": "load",
+    "generation_year1_kwh": {
+      "low": 3821,
+      "base": 4107,
+      "high": 4298
+    },
+    "generation_year_n_factor": "(1-0.006)^(t-1)",
+    "monthly_generation_kwh": [
+      356.0,
+      361.2,
+      412.8,
+      407.6,
+      405.1,
+      309.6,
+      252.8,
+      263.2,
+      304.4,
+      350.9,
+      343.1,
+      340.6
+    ],
+    "slab_guidance_f2": "0–150 units: 1–2 kW · 150–300: 2–3 kW · >300: >3 kW",
+    "assumptions": [
+      "P-AKW",
+      "P-KWSTEP",
+      "P-DEG",
+      "P-LID"
+    ]
+  },
+  "subsidy": {
+    "amount": {
+      "value": 78000.0,
+      "class": "FACT",
+      "unit": "INR",
+      "en": "₹78,000",
+      "hi": "₹78,000",
+      "assumptions": [],
+      "note": null
+    },
+    "applicant": "residential",
+    "state_topup": "unknown",
+    "eligibility": "unconfirmed",
+    "estimate": false,
+    "policy_version": "subsidy:ALL:ALL:2024-02-29",
+    "effective_date": "2024-02-29",
+    "source_url": "https://pune.gov.in/scheme/pm-surya-gharmuft-bijli-yojna/",
+    "rule_id": "PMSG-CFA-2024",
+    "record_hash": "04cb485eb644d7d1",
+    "resolved_at_level": "state+discom",
+    "note": "State top-up is unknown, not zero. Final eligibility is decided on the national portal."
+  },
+  "payback": {
+    "status": "ok",
+    "net_cost_inr": 102000,
+    "savings_year1_inr": {
+      "low": 30566,
+      "base": 32859,
+      "high": 34387
+    },
+    "payback_simple_years": {
+      "low": 3.3,
+      "base": 3.1,
+      "high": 3.0
+    },
+    "payback_cumulative_years": {
+      "low": 3.4,
+      "base": 3.2,
+      "high": 3.1
+    },
+    "tariff_synthetic": true,
+    "assumptions": [
+      "P-ESC",
+      "P-DEG",
+      "P-OM",
+      "P-INV",
+      "P-SELF",
+      "P-HORIZON"
+    ]
+  },
+  "policy_version": "subsidy:ALL:ALL:2024-02-29",
+  "warnings": [
+    "tariff is SYNTHETIC test data — not a real DISCOM tariff"
+  ],
+  "disclaimer_en": "Assistance summary — not the official application. Apply at pmsuryaghar.gov.in; final eligibility is decided there.",
+  "disclaimer_hi": "सहायता सारांश — आधिकारिक आवेदन नहीं। pmsuryaghar.gov.in पर आवेदन करें; अंतिम पात्रता वहीं तय होती है।"
+}

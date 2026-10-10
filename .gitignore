@@ -1,0 +1,58 @@
+# ---- secrets (never commit; the *.example files are the templates)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials
+.aws/
+
+# ---- local tool state
+.claude/settings.local.json
+**/.claude/settings.local.json
+# Agent skills live in ONE place, .claude/skills/ (committed; also listed in skills-lock.json, see Agent/INSTALL_SKILLS.md)
+Agent/.claude/
+Agent/.agents/
+
+# ---- OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.log
+
+# ---- scratch
+*.tmp
+*.bak
+test_out*.txt
+final_tests.txt
+
+# ---- build output, dependencies and caches (also ignored per-package; this is the safety net)
+node_modules/
+.next/
+out/
+dist/
+build/
+cdk.out/
+*.tsbuildinfo
+next-env.d.ts
+test-results/
+playwright-report/
+coverage/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# ---- local runtime data (SQLite, outbox, generated blobs)
+backend/data/
+*.db
+*.db-shm
+*.db-wal

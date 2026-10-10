@@ -1,0 +1,26 @@
+{
+  "type": "tariff",
+  "state": "TEST",
+  "discom": "TEST-DISCOM",
+  "effective_date": "2026-04-01",
+  "reviewed_on": "2026-10-08",
+  "synthetic": true,
+  "status": "SYNTHETIC — test only, never shown as a real tariff",
+  "verified_by": null,
+  "source_url": null,
+  "note": "Arithmetic-only fixture from spec M30+31: flat ₹8/kWh, no fixed charge.",
+  "category": "residential",
+  "currency": "INR",
+  "fixed_charge_inr_per_month": 0,
+  "slabs": [
+    {"from_kwh": 0, "to_kwh": null, "inr_per_kwh": 8.0}
+  ],
+  "settlement": {
+    "type": "netmetering",
+    "mode": "net_metering",
+    "banking": "carry_forward_monthly",
+    "true_up": "annual",
+    "export_rate_inr_per_kwh": 0.0,
+    "true_up_rate_inr_per_kwh": 0.0
+  }
+}
