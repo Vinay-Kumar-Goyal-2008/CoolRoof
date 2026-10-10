@@ -17,7 +17,7 @@ export function SignalsPanel({ wards }: { wards: WardsResponse | undefined }) {
   const f = forecast.data;
 
   return (
-    <div className="grid">
+    <div className="split">
       <div className="col">
         {official && (
           <aside className="banner official" role="status">

@@ -44,7 +44,7 @@ export function PlannerConsole({ wards, selected }: { wards: WardsResponse | und
         </form>
       </section>
       {saved && (
-        <div className="grid">
+        <div className="split">
           <div className="col">
             <PlanCard />
             <WarningCard />

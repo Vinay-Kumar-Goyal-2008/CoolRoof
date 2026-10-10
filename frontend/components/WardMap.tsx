@@ -91,7 +91,7 @@ export function WardMap(p: Props) {
       style: {
         version: 8,
         sources: {},
-        layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef1f4" } }],
+        layers: [{ id: "bg", type: "background", paint: { "background-color": "#e9e2d6" } }],
       },
       bounds,
       fitBoundsOptions: { padding: 24 },

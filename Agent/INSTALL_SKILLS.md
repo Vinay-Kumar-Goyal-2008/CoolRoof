@@ -1,5 +1,7 @@
 # INSTALL_SKILLS — Agent Skills for the CoolRoof Build
 
+> **Note:** all skills now live in one folder, `<repo root>/.claude/skills/`, with a single `skills-lock.json` at the repo root.
+>
 > **Instructions for Claude Code:** Install every skill listed below, using **PowerShell**, from the **project root folder** (the folder that contains `AGENTS.md`, `SPEC.md`, `TASKS.md`). Skills come from https://skills.sh and are installed with the `skills` CLI via `npx`.
 
 ## Rules for you (Claude Code)

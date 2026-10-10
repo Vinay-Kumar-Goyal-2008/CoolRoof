@@ -22,7 +22,8 @@ API Gateway, S3, DynamoDB, CDK) is written but **has not been deployed yet**.
 | `frontend/` | Next.js 15 + MapLibre, English/हिंदी, Playwright tests (`e2e/`) |
 | `infra/` | AWS CDK (Python): `DataStack` (S3 + 12 DynamoDB tables), `ApiStack` (Lambda container + API Gateway) |
 | `docs/` | `GAPS.md` (every deviation + open item, **read it**), `DEMO.md` (3-minute video script) |
-| `Agent/` | The original specs (spec v0.3, PRD, SPEC, TASKS, AGENTS), `SCOPE_DEFERRED.md`, and the installed Claude skills (`Agent/.claude/skills`) |
+| `Agent/` | The original specs (spec v0.3, PRD, SPEC, TASKS, AGENTS), `SCOPE_DEFERRED.md`, |
+| `.claude/skills/` | All installed Claude skills in one folder (restorable from `skills-lock.json`) |
 
 ## What is built, vs the original plan
 
@@ -101,7 +102,7 @@ uv run poe api               # http://localhost:8000/docs
 
 cd ..\frontend
 npm install
-npm run dev                  # http://localhost:3000  (proxies /api to :8000)
+npm run dev                  # http://localhost:3000 = landing page; /app = the application (proxies /api to :8000)
 ```
 
 Other tasks: `uv run poe` lists them (`ci`, `test`, `lint`, `typecheck`, `fixtures`, `seed`).

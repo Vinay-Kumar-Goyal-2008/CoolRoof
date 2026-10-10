@@ -11,7 +11,7 @@ function watchErrors(page: import("@playwright/test").Page): string[] {
 
 test("heat intelligence: layers, drivers, readiness, land indicator", async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto("/");
+  await page.goto("/app/heat");
   await page.locator(".ranking button").first().click();
 
   await expect(page.getByRole("heading", { name: /associated with this ward/ })).toBeVisible();
@@ -35,8 +35,8 @@ test("heat intelligence: layers, drivers, readiness, land indicator", async ({ p
 
 test("planner publishes an advisory; the public sees it and can listen", async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto("/");
-  await page.getByRole("tab", { name: "Planner console" }).click();
+  await page.goto("/app");
+  await page.getByRole("link", { name: "Planner console" }).first().click();
 
   await page.getByLabel("Planner API key").fill("dev-planner-key");
   await page.getByLabel(/Your name/).fill("asha");
@@ -55,7 +55,7 @@ test("planner publishes an advisory; the public sees it and can listen", async (
   await expect(page.locator("article.reco").filter({ hasText: "published" }).first()).toBeVisible();
 
   // public side
-  await page.getByRole("tab", { name: "Alerts & forecast" }).click();
+  await page.getByRole("link", { name: /^Alerts & forecast/ }).click();
   await expect(page.getByRole("heading", { name: "Heat-dome forecast signal" })).toBeVisible();
   const advisory = page.locator("article.reco").first();
   await expect(advisory).toContainText("Heat advisory");
@@ -65,8 +65,7 @@ test("planner publishes an advisory; the public sees it and can listen", async (
 });
 
 test("roof sketch sets the area and the assessment still works", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("tab", { name: "Rooftop solar" }).click();
+  await page.goto("/app/solar");
   const grid = page.locator(".sketch-grid");
   await grid.scrollIntoViewIfNeeded();
   const box = (await grid.boundingBox())!;

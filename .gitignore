@@ -11,8 +11,9 @@ credentials
 # ---- local tool state
 .claude/settings.local.json
 **/.claude/settings.local.json
-# Third-party agent skills are restorable from Agent/skills-lock.json (see Agent/INSTALL_SKILLS.md)
-Agent/.claude/skills/
+# Third-party agent skills live in ONE place, .claude/skills/, restorable from skills-lock.json (see Agent/INSTALL_SKILLS.md)
+.claude/skills/
+Agent/.claude/
 Agent/.agents/
 
 # ---- OS / editor noise
@@ -29,3 +30,30 @@ desktop.ini
 *.bak
 test_out*.txt
 final_tests.txt
+
+# ---- build output, dependencies and caches (also ignored per-package; this is the safety net)
+node_modules/
+.next/
+out/
+dist/
+build/
+cdk.out/
+*.tsbuildinfo
+next-env.d.ts
+test-results/
+playwright-report/
+coverage/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# ---- local runtime data (SQLite, outbox, generated blobs)
+backend/data/
+*.db
+*.db-shm
+*.db-wal
