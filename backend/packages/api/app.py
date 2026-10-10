@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from packages.adapters.registry import Adapters, build_adapters
+from packages.adapters.secrets import apply_secret_settings
 from packages.api.deps import AppState
 from packages.api.errors import install_error_handlers
 from packages.api.middleware import BodySizeLimitMiddleware, RequestContextMiddleware
@@ -47,6 +48,7 @@ def create_app(
     settings = settings or get_settings()
     configure_logging(settings.log_level)
     adapters = adapters or build_adapters(settings)
+    settings = apply_secret_settings(settings, adapters.secrets)
     state = AppState(
         settings=settings,
         adapters=adapters,
