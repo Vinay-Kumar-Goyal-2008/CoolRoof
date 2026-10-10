@@ -11,8 +11,7 @@ credentials
 # ---- local tool state
 .claude/settings.local.json
 **/.claude/settings.local.json
-# Third-party agent skills live in ONE place, .claude/skills/, restorable from skills-lock.json (see Agent/INSTALL_SKILLS.md)
-.claude/skills/
+# Agent skills live in ONE place, .claude/skills/ (committed; also listed in skills-lock.json, see Agent/INSTALL_SKILLS.md)
 Agent/.claude/
 Agent/.agents/
 
