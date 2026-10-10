@@ -76,6 +76,20 @@ def _fmt(label: dict[str, str], lang: Language) -> str:
     return label[lang.value]
 
 
+def _draw_outline(pdf: FPDF, points_m: list[tuple[float, float]], box_mm: float = 45.0) -> None:
+    """Vector roof outline scaled into a square box (y up → page y down)."""
+    xs, ys = [p[0] for p in points_m], [p[1] for p in points_m]
+    span = max(max(xs) - min(xs), max(ys) - min(ys)) or 1.0
+    scale = box_mm / span
+    x0, y0 = pdf.get_x() + 4, pdf.get_y() + 2
+    poly = [((x - min(xs)) * scale + x0, (max(ys) - y) * scale + y0) for x, y in points_m]
+    pdf.set_draw_color(11, 92, 173)
+    pdf.set_fill_color(214, 229, 245)
+    pdf.set_line_width(0.5)
+    pdf.polygon(poly, style="DF")
+    pdf.set_y(y0 + box_mm * (max(ys) - min(ys)) / span + 4)
+
+
 def build_pdf(
     assessment: dict[str, Any],
     checklist: dict[str, Any],
@@ -99,6 +113,7 @@ def build_pdf(
             "hi": "सहायता सारांश - आधिकारिक आवेदन नहीं - pmsuryaghar.gov.in पर आवेदन करें",
         },
         "system": {"en": "System and generation", "hi": "सिस्टम और उत्पादन"},
+        "outline": {"en": "Roof outline (drawn on the map)", "hi": "छत की रूपरेखा (नक्शे पर बनाई गई)"},
         "subsidy": {"en": "Subsidy", "hi": "सब्सिडी"},
         "payback": {"en": "Payback", "hi": "लागत वापसी"},
         "checklist": {"en": "Checklist", "hi": "चेकलिस्ट"},
@@ -149,6 +164,24 @@ def build_pdf(
             "Not available - more information needed."
             if lang_key == "en"
             else "उपलब्ध नहीं - अधिक जानकारी चाहिए।"
+        )
+
+    outline = (assessment.get("roof") or {}).get("outline")
+    if outline:
+        heading(strings["outline"][lang_key])
+        _draw_outline(pdf, outline["points_m"])
+        line(
+            f"{format_number(outline['area_m2'], decimals=0)} m²"
+            + (
+                (
+                    "  -  differs from the area entered"
+                    if lang_key == "en"
+                    else "  -  दर्ज क्षेत्र से भिन्न"
+                )
+                if outline.get("outline_changed")
+                else ""
+            ),
+            8,
         )
 
     sub = assessment.get("subsidy")

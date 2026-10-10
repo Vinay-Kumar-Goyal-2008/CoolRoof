@@ -112,6 +112,14 @@ _SOLAR = re.compile(r"solar|subsidy|payback|roof|सोलर|सब्सिड
 _HEAT = re.compile(r"heat|hot|ward|cool|temperature|गर्मी|वार्ड|तापमान", re.I)
 _PDF = re.compile(r"pdf|summary|checklist|document|दस्तावेज़|चेकलिस्ट|सारांश", re.I)
 _FORECAST = re.compile(r"forecast|heat.?dome|पूर्वानुमान", re.I)
+_DRIVERS = re.compile(r"\bwhy\b|driver|reason|associated|क्यों|कारण", re.I)
+_READY = re.compile(r"hospital|readiness|facilit|clinic|अस्पताल|तैयारी|स्वास्थ्य", re.I)
+_ALERTS = re.compile(r"alert|advisor|warning|चेतावनी|सलाह|अलर्ट", re.I)
+_SOIL = re.compile(r"soil|degrad|land\b|मिट्टी|भूमि", re.I)
+_HABITAT = re.compile(r"habitat|protected|forest|sanctuary|वन|अभयारण्य", re.I)
+_COOLING = re.compile(r"cooling option|low.?cost|cheap|economical|सस्ता|कम लागत|ठंडा रखने", re.I)
+_SOLAR_STRICT = re.compile(r"solar|subsidy|payback|kw|सोलर|सब्सिडी|सूर्य", re.I)
+_RECO = re.compile(r"recommend|what (can|should)|सिफ़ारिश|क्या करें", re.I)
 
 
 class MockEngine:
@@ -150,6 +158,49 @@ class MockEngine:
             s.tool_outputs[key] = tools.call(name, **kw)
             called.append(name)
 
+        wid = s.ward_id
+        wid_heat = wid and not _SOLAR_STRICT.search(message)
+        if wid_heat and _DRIVERS.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_drivers", "drivers", ward_id=wid)
+            if s.tool_outputs["drivers"].get("top"):
+                n = len(s.tool_outputs["drivers"]["top"])
+                return T["drivers" if n >= 2 else "drivers_one"][s.lang], called
+            return T["drivers_none"][s.lang], called
+        if wid and _READY.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_readiness", "readiness", ward_id=wid, lang=s.lang)
+            has = bool(s.tool_outputs["readiness"].get("prompts"))
+            return T["readiness" if has else "readiness_none"][s.lang], called
+        if _ALERTS.search(message):
+            use("get_alerts", "alerts", ward_id=wid, lang=s.lang)
+            use("get_advisory", "advisory", ward_id=wid, lang=s.lang)
+            if s.tool_outputs["advisory"].get("text"):
+                return T["advisory"][s.lang], called
+            if s.tool_outputs["alerts"]["alerts"]:
+                return T["alerts"][s.lang], called
+            return T["alerts_none"][s.lang], called
+        if wid and _SOIL.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_degradation", "soil", ward_id=wid)
+            return T["soil"][s.lang], called
+        if _HABITAT.search(message):
+            use("get_habitat_pressure", "habitat")
+            if s.tool_outputs["habitat"]["areas"]:
+                return T["habitat"][s.lang], called
+            return T["habitat_none"][s.lang], called
+        if wid and _COOLING.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_cooling_options", "cooling", ward_id=wid, lang=s.lang)
+            if s.tool_outputs["cooling"]["options"]:
+                return T["cooling"][s.lang], called
+            return T["cooling_none"][s.lang], called
+        if wid_heat and _RECO.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_recommendations", "reco", ward_id=wid, lang=s.lang)
+            if s.tool_outputs["reco"]["recommendations"]:
+                return T["reco"][s.lang], called
+            return T["reco_none"][s.lang], called
         if _FORECAST.search(message):
             use("get_heatdome_forecast", "forecast")
             return T["forecast"][s.lang], called
@@ -166,6 +217,10 @@ class MockEngine:
                 lang=s.lang,
             )
             return T["pdf"][s.lang], called
+        if wid_heat and _HEAT.search(message) and not _SOLAR.search(message):
+            use("get_ward_context", "ward", ward_id=wid)
+            use("get_heat_analysis", "heat", ward_id=wid)
+            return T["heat"][s.lang], called
         if _SOLAR.search(message) or s.facts.get("roof_area_m2"):
             if not s.facts.get("roof_area_m2"):
                 use("request_user_input", "ask", fields=["roof_area_m2"])
@@ -221,6 +276,66 @@ T: dict[str, dict[str, str]] = {
     "forecast": {
         "en": "Heat-dome forecast signal (not an official warning): risk {{forecast.risk}}, event probability {{forecast.p_event}}. Official IMD warnings take precedence.",
         "hi": "हीट-डोम पूर्वानुमान संकेत (आधिकारिक चेतावनी नहीं): जोखिम {{forecast.risk}}, घटना की संभावना {{forecast.p_event}}। आधिकारिक IMD चेतावनी को प्राथमिकता दें।",
+    },
+    "drivers": {
+        "en": "In {{ward.name}} the features most associated with surface temperature are {{drivers.top.0.label}} ({{drivers.top.0.effect}}, {{drivers.top.0.magnitude_c}} °C) and {{drivers.top.1.label}} ({{drivers.top.1.effect}}, {{drivers.top.1.magnitude_c}} °C). This is an association, not a proven cause.",
+        "hi": "{{ward.name_hi}} में सतह के तापमान से सबसे ज़्यादा जुड़े कारक हैं {{drivers.top.0.label}} ({{drivers.top.0.effect}}, {{drivers.top.0.magnitude_c}} °C) और {{drivers.top.1.label}} ({{drivers.top.1.effect}}, {{drivers.top.1.magnitude_c}} °C)। यह एक संबंध है, सिद्ध कारण नहीं।",
+    },
+    "drivers_one": {
+        "en": "In {{ward.name}} the feature most associated with surface temperature is {{drivers.top.0.label}} ({{drivers.top.0.effect}}, {{drivers.top.0.magnitude_c}} °C). This is an association, not a proven cause.",
+        "hi": "{{ward.name_hi}} में सतह के तापमान से सबसे ज़्यादा जुड़ा कारक {{drivers.top.0.label}} है ({{drivers.top.0.effect}}, {{drivers.top.0.magnitude_c}} °C)। यह एक संबंध है, सिद्ध कारण नहीं।",
+    },
+    "drivers_none": {
+        "en": "I cannot show heat drivers for this ward: the model does not cover it reliably.",
+        "hi": "इस वार्ड के लिए गर्मी के कारक नहीं दिखा सकता: मॉडल इसे भरोसेमंद ढंग से कवर नहीं करता।",
+    },
+    "readiness": {
+        "en": "{{readiness.prompts.0.text}} (for: {{readiness.prompts.0.audience}}). This asks officers to confirm readiness; it does not state beds or stock.",
+        "hi": "{{readiness.prompts.0.text}} ({{readiness.prompts.0.audience}} के लिए)। यह अधिकारियों से तैयारी की पुष्टि माँगता है; यह बिस्तर या स्टॉक नहीं बताता।",
+    },
+    "readiness_none": {
+        "en": "No readiness prompt is active for this ward right now.",
+        "hi": "इस वार्ड के लिए अभी कोई तैयारी संकेत सक्रिय नहीं है।",
+    },
+    "advisory": {
+        "en": "Current public advisory (valid until {{advisory.valid_until}}): {{advisory.text}}",
+        "hi": "वर्तमान सार्वजनिक सलाह ({{advisory.valid_until}} तक मान्य): {{advisory.text}}",
+    },
+    "alerts": {
+        "en": "Active alert ({{alerts.alerts.0.severity}}, valid until {{alerts.alerts.0.valid_until}}): {{alerts.alerts.0.text}}",
+        "hi": "सक्रिय अलर्ट ({{alerts.alerts.0.severity}}, {{alerts.alerts.0.valid_until}} तक): {{alerts.alerts.0.text}}",
+    },
+    "alerts_none": {
+        "en": "There is no active public alert or advisory right now. Official IMD warnings take precedence.",
+        "hi": "अभी कोई सक्रिय सार्वजनिक अलर्ट या सलाह नहीं है। आधिकारिक IMD चेतावनी को प्राथमिकता दें।",
+    },
+    "soil": {
+        "en": "Land-degradation indicator for {{ward.name}}: {{soil.signal}} (vegetation trend {{soil.ndvi_direction}} by {{soil.ndvi_slope_abs}} per year over {{soil.n_years}} years). {{soil.label}}.",
+        "hi": "{{ward.name_hi}} का भूमि क्षरण संकेतक: {{soil.signal}} (वनस्पति प्रवृत्ति {{soil.ndvi_direction}}, {{soil.ndvi_slope_abs}} प्रति वर्ष, {{soil.n_years}} वर्षों में)। संकेतक, निदान नहीं।",
+    },
+    "habitat": {
+        "en": "{{habitat.areas.0.name}}: habitat pressure {{habitat.areas.0.pressure}} (index {{habitat.areas.0.hpi}}). It is a habitat pressure indicator, unverified — not a measured biodiversity loss.",
+        "hi": "{{habitat.areas.0.name}}: आवास दबाव {{habitat.areas.0.pressure}} (सूचकांक {{habitat.areas.0.hpi}})। यह आवास दबाव संकेतक है, असत्यापित — मापी गई जैव विविधता हानि नहीं।",
+    },
+    "habitat_none": {
+        "en": "No protected-area pressure indicator is available for this city.",
+        "hi": "इस शहर के लिए संरक्षित क्षेत्र दबाव संकेतक उपलब्ध नहीं है।",
+    },
+    "cooling": {
+        "en": "Low-cost cooling options that suit {{ward.name}}: {{cooling.options.0.name}} (cost band: {{cooling.options.0.cost_band}}). Costs are bands only until a local price schedule is cited.",
+        "hi": "{{ward.name_hi}} के लिए उपयुक्त कम-लागत शीतलन विकल्प: {{cooling.options.0.name}} (लागत श्रेणी: {{cooling.options.0.cost_band}})। स्थानीय मूल्य सूची मिलने तक लागत केवल श्रेणी में है।",
+    },
+    "cooling_none": {
+        "en": "No catalogued cooling option matches this ward.",
+        "hi": "इस वार्ड से मेल खाता कोई शीतलन विकल्प सूची में नहीं है।",
+    },
+    "reco": {
+        "en": "For {{ward.name}} the top recommendation is: {{reco.recommendations.0.text}} (evidence grade {{reco.recommendations.0.evidence_grade}}).",
+        "hi": "{{ward.name_hi}} के लिए शीर्ष सिफ़ारिश: {{reco.recommendations.0.text}} (प्रमाण श्रेणी {{reco.recommendations.0.evidence_grade}})।",
+    },
+    "reco_none": {
+        "en": "No recommendation rule fires for this ward with the data available.",
+        "hi": "उपलब्ध डेटा के साथ इस वार्ड के लिए कोई सिफ़ारिश नियम लागू नहीं होता।",
     },
     "grounding_fallback": {
         "en": "I could not verify my answer against the data, so here are the facts I can confirm.",
@@ -293,10 +408,69 @@ class StrandsEngine:
             """Heat type of the ward with authority brief."""
             return record("get_heat_analysis", "heat", ward_id=ward_id)
 
+        @tool
+        def get_drivers(ward_id: str) -> dict[str, Any]:
+            """Land features associated with the ward's heat (correlational)."""
+            return record("get_drivers", "drivers", ward_id=ward_id)
+
+        @tool
+        def get_recommendations(ward_id: str) -> dict[str, Any]:
+            """Rule-based recommendations with evidence grades."""
+            return record("get_recommendations", "reco", ward_id=ward_id, lang=s.lang)
+
+        @tool
+        def get_cooling_options(ward_id: str) -> dict[str, Any]:
+            """Low-cost cooling options matched to the ward."""
+            return record("get_cooling_options", "cooling", ward_id=ward_id, lang=s.lang)
+
+        @tool
+        def get_readiness(ward_id: str) -> dict[str, Any]:
+            """Readiness prompts for health and utility officers (no capacity data)."""
+            return record("get_readiness", "readiness", ward_id=ward_id, lang=s.lang)
+
+        @tool
+        def get_degradation(ward_id: str) -> dict[str, Any]:
+            """Land-degradation indicator (not a diagnosis)."""
+            return record("get_degradation", "soil", ward_id=ward_id)
+
+        @tool
+        def get_habitat_pressure() -> dict[str, Any]:
+            """Protected-area habitat pressure indicator."""
+            return record("get_habitat_pressure", "habitat")
+
+        @tool
+        def get_alerts(ward_id: str | None = None) -> dict[str, Any]:
+            """Active public alerts."""
+            return record("get_alerts", "alerts", ward_id=ward_id, lang=s.lang)
+
+        @tool
+        def get_advisory(ward_id: str | None = None) -> dict[str, Any]:
+            """Latest approved public heat advisory."""
+            return record("get_advisory", "advisory", ward_id=ward_id, lang=s.lang)
+
+        @tool
+        def get_heatdome_forecast() -> dict[str, Any]:
+            """Heat-dome forecast signal (not an official warning)."""
+            return record("get_heatdome_forecast", "forecast")
+
         agent = Agent(
             model=self._model,
             system_prompt=self.SYSTEM + f" Reply language: {s.lang}.",
-            tools=[get_ward_context, get_solar_assessment, get_subsidy_rules, get_heat_analysis],
+            tools=[
+                get_ward_context,
+                get_solar_assessment,
+                get_subsidy_rules,
+                get_heat_analysis,
+                get_drivers,
+                get_recommendations,
+                get_cooling_options,
+                get_readiness,
+                get_degradation,
+                get_habitat_pressure,
+                get_alerts,
+                get_advisory,
+                get_heatdome_forecast,
+            ],
             callback_handler=None,
         )
         result = agent(message)

@@ -1,5 +1,9 @@
 # SCOPE_DEFERRED — modules removed from the current build
 
+> **UPDATE (2026-10-10): every module below has since been built** (M16, M18+19, M20+21, M22, M23, M24, M37, plus
+> Cognito token verification, the alerts/advisory/incident/admin APIs and screens 9 and 11), with tests. See the README
+> status tables and `docs/GAPS.md` §6–7 for what is still unverified. The text below is kept as the original decision record.
+
 > **Decided:** 2026-10-10, by the project owner, to focus the hackathon build on one problem
 > (urban heat → which roofs to cool, and rooftop-solar for households) and keep it working end to end.
 > Judging criteria in mind: idea and impact, built on AWS, design and usability, a working execution, a 3-minute demo video.

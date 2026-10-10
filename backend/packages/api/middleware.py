@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from packages.core import metrics
 from packages.core.ids import new_uuid
 from packages.core.logging import bind_context, clear_context, get_logger
 
@@ -32,13 +33,21 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         started = time.perf_counter()
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
+        ms = round((time.perf_counter() - started) * 1000, 1)
         _log.info(
             "request",
             method=request.method,
             path=request.url.path,
             status=response.status_code,
-            ms=round((time.perf_counter() - started) * 1000, 1),
+            ms=ms,
         )
+        route = getattr(request.scope.get("route"), "path", "unmatched")
+        if request.url.path != "/health":
+            metrics.emit("LatencyMs", ms, "Milliseconds", Route=route)
+            if response.status_code >= 500:
+                metrics.emit("Errors5xx", 1, Route=route)
+            elif response.status_code >= 400:
+                metrics.emit("Errors4xx", 1, Route=route)
         return response
 
 

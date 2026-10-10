@@ -244,6 +244,14 @@ parameters:
     source: "Spec M17 thresholds θ_prio, θ_roof, θ_sol, θ_exp, θ_bare"
     modules: [M17]
 
+  P-BUILT-DENSE:
+    value: 0.5
+    unit: "built fraction"
+    status: ASSUME
+    source: "Wards at or above this built share count as 'dense' built form when matching cooling options"
+    modules: [M17]
+    added_by_implementation: true
+
   # ---------------------------------------------------------------- M20+21
   P-COVER:
     value: 3000
@@ -354,6 +362,13 @@ parameters:
     status: ASSUME
     source: "South-facing array in the northern hemisphere"
     modules: [M25]
+  P-GAMMA:
+    value: -0.004
+    unit: "per K (power temperature coefficient)"
+    status: ASSUME
+    source: "Typical crystalline-silicon module temperature coefficient (-0.4 %/K); used only in the NASA POWER + pvlib fallback"
+    modules: [M25]
+    added_by_implementation: true
   P-LOSS:
     value: {low: 0.10, base: 0.14, high: 0.20}
     unit: "system loss fraction"

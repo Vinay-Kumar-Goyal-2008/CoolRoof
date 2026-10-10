@@ -23,6 +23,7 @@ from typing import Any, Literal
 import httpx
 from pydantic import BaseModel, Field
 
+from packages.adapters.docstore import DocStore, Table
 from packages.core.enums import (
     Eligibility,
     FieldClass,
@@ -33,6 +34,7 @@ from packages.core.enums import (
     SuryaCheckStatus,
 )
 from packages.core.errors import (
+    InputValidationError,
     PolicyUnavailableError,
     UpstreamError,
 )
@@ -40,6 +42,7 @@ from packages.core.i18n import format_inr
 from packages.core.ids import input_hash
 from packages.core.params import ParamRegistry
 from packages.services.policy_store import PolicyRecord, PolicyStore, PolicyType
+from packages.services.solar_fallback import fallback_monthly
 
 __all__ = [
     "SolarInputs",
@@ -98,6 +101,7 @@ class SuryaCheckRequest(BaseModel):
     discom: str
     roof_area_m2: float | None = Field(default=None, gt=0)
     free_area_m2: float | None = Field(default=None, gt=0)
+    roof_polygon: dict[str, Any] | None = None  # GeoJSON Polygon (lon/lat) drawn on the map
     monthly_kwh: list[float] | None = None  # 12 values, user's own bill data
     avg_monthly_kwh: float | None = Field(default=None, gt=0)
     gross_cost_inr: float | None = Field(default=None, gt=0)
@@ -118,16 +122,55 @@ class SolarResource:
 
 
 class SolarSource:
-    """PVGIS → NASA POWER+pvlib → cache → unavailable; fixture mode offline."""
+    """PVGIS → NASA POWER + pvlib → cache (stale) → unavailable; fixture mode offline."""
 
-    def __init__(self, fixture_path: Path | None, live: bool = False) -> None:
+    CACHE_TTL_S = 90 * 86400
+
+    def __init__(
+        self,
+        fixture_path: Path | None,
+        live: bool = False,
+        *,
+        cache: DocStore | None = None,
+        gamma_pdc: float | None = None,
+    ) -> None:
         self._fixture = fixture_path
         self._live = live
-        self._cache: dict[str, SolarResource] = {}
+        self._mem: dict[str, SolarResource] = {}
+        self._cache = cache
+        self._gamma = gamma_pdc
 
     @staticmethod
     def cell(lat: float, lon: float) -> str:
         return f"{round(lat, 1)},{round(lon, 1)}"
+
+    # -- cache (memory first, then the shared DocStore so Lambda instances share it) ------------
+    def _remember(self, key: str, res: SolarResource) -> None:
+        self._mem[key] = res
+        if self._cache is not None:
+            self._cache.put(
+                Table.CACHE,
+                f"solar#{key}",
+                "-",
+                {
+                    "specific_yield": res.specific_yield,
+                    "monthly_base": res.monthly_base,
+                    "source": res.source,
+                },
+                ttl_s=self.CACHE_TTL_S,
+            )
+
+    def _recall(self, key: str) -> SolarResource | None:
+        cached = self._mem.get(key)
+        if cached is None and self._cache is not None:
+            doc = self._cache.get(Table.CACHE, f"solar#{key}")
+            if doc:
+                cached = SolarResource(doc["specific_yield"], doc["monthly_base"], doc["source"])
+        return (
+            SolarResource(cached.specific_yield, cached.monthly_base, cached.source, stale=True)
+            if cached
+            else None
+        )
 
     def fetch(self, lat: float, lon: float, tilt: float, az: float) -> SolarResource | None:
         cell = self.cell(lat, lon)
@@ -135,17 +178,18 @@ class SolarSource:
         if self._live:
             try:
                 res = self._pvgis(lat, lon, tilt, az)
-                self._cache[key] = res
-                return res
             except (httpx.HTTPError, KeyError, ValueError):
-                cached = self._cache.get(key)
-                return (
-                    SolarResource(
-                        cached.specific_yield, cached.monthly_base, cached.source, stale=True
-                    )
-                    if cached
-                    else None
-                )
+                res = None
+            if res is None and self._gamma is not None:
+                try:
+                    monthly = fallback_monthly(lat, lon, tilt, az, self._gamma)
+                    res = SolarResource({}, monthly, "nasa_power+pvlib (fallback)")
+                except (httpx.HTTPError, KeyError, ValueError):
+                    res = None
+            if res is not None:
+                self._remember(key, res)
+                return res
+            return self._recall(key)
         if self._fixture and self._fixture.exists():
             data = json.loads(self._fixture.read_text(encoding="utf-8"))
             if cell in data:
@@ -203,6 +247,27 @@ class SuryaCheckResult(BaseModel):
         "सहायता सारांश — आधिकारिक आवेदन नहीं। pmsuryaghar.gov.in पर आवेदन करें; "
         "अंतिम पात्रता वहीं तय होती है।"
     )
+
+
+def roof_outline(polygon: dict[str, Any]) -> tuple[list[tuple[float, float]], float]:
+    """(points in metres relative to the outline's centroid, geodesic area m²) for a drawn polygon."""
+    from pyproj import Geod
+    from shapely.geometry import shape
+
+    try:
+        geom = shape(polygon)
+    except (ValueError, KeyError, AttributeError) as exc:
+        raise InputValidationError(f"invalid roof polygon: {exc}") from exc
+    if geom.geom_type != "Polygon" or geom.is_empty or not geom.is_valid:
+        raise InputValidationError("roof outline must be a single valid polygon")
+    lons, lats = zip(*list(geom.exterior.coords), strict=True)
+    area = abs(Geod(ellps="WGS84").polygon_area_perimeter(lons, lats)[0])
+    lon0, lat0 = geom.centroid.x, geom.centroid.y
+    kx = 111_320.0 * math.cos(math.radians(lat0))
+    points = [
+        ((lo - lon0) * kx, (la - lat0) * 110_574.0) for lo, la in zip(lons, lats, strict=True)
+    ]
+    return points, float(area)
 
 
 # ============================================================================ M29
@@ -340,15 +405,27 @@ def run_suryacheck(req: SuryaCheckRequest, ctx: SolarInputs) -> SuryaCheckResult
     # ------------------------------------------------ M26 roof suitability
     roof_out: dict[str, Any] | None = None
     usable: dict[str, float] | None = None
+    outline_pts: list[tuple[float, float]] | None = None
+    roof_area = req.roof_area_m2
+    outline_changed = False
+    if req.roof_polygon:
+        outline_pts, outline_area = roof_outline(req.roof_polygon)
+        if roof_area is None:
+            roof_area = outline_area
+        elif abs(roof_area - outline_area) / outline_area > 0.10:
+            outline_changed = True  # the typed area no longer matches the drawn outline
+            warnings.append(
+                "roof area differs from the drawn outline by more than 10% — please re-check"
+            )
     if req.free_area_m2:
         usable = {"low": req.free_area_m2, "base": req.free_area_m2, "high": req.free_area_m2}
         area_class = FieldClass.USER
-    elif req.roof_area_m2:
+    elif roof_area:
         u = p.require_triple("P-U")
         usable = {
-            "low": req.roof_area_m2 * u.low,
-            "base": req.roof_area_m2 * u.base,
-            "high": req.roof_area_m2 * u.high,
+            "low": roof_area * u.low,
+            "base": roof_area * u.base,
+            "high": roof_area * u.high,
         }
         area_class = FieldClass.ASSUMPTION
     else:
@@ -374,8 +451,14 @@ def run_suryacheck(req: SuryaCheckRequest, ctx: SolarInputs) -> SuryaCheckResult
             "area_class": area_class.value,
             "assumptions": [] if area_class is FieldClass.USER else ["P-U"],
         }
-        if req.roof_area_m2 and req.free_area_m2:
-            ratio = req.free_area_m2 / req.roof_area_m2
+        if outline_pts:
+            roof_out["outline"] = {
+                "points_m": [(round(x, 2), round(y, 2)) for x, y in outline_pts],
+                "area_m2": round(roof_area or 0.0, 1),
+                "outline_changed": outline_changed,
+            }
+        if roof_area and req.free_area_m2:
+            ratio = req.free_area_m2 / roof_area
             if ratio > 1:
                 warnings.append("free area exceeds roof area — please re-check the outline")
 

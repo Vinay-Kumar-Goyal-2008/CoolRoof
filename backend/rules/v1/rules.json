@@ -142,5 +142,67 @@
       "en": "Schools in {ward} may need heat precautions during the forecast signal.",
       "hi": "पूर्वानुमान संकेत के दौरान {ward} के स्कूलों में गर्मी से बचाव ज़रूरी हो सकता है।"
     }
+  },
+  {
+    "id": "R-RD-01",
+    "intervention": "Facility readiness check",
+    "required_fields": [
+      "population.exposed_population"
+    ],
+    "evidence_ref": [
+      "EV-HEALTH-READINESS"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Prompts ask officers to confirm readiness; no bed, stock or demand data is used"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "High heat exposure in {ward} during a warning or forecast signal: ask health and utility officers to confirm readiness.",
+      "hi": "चेतावनी या पूर्वानुमान संकेत के दौरान {ward} में गर्मी का संपर्क अधिक है: स्वास्थ्य और बिजली अधिकारियों से तैयारी की पुष्टि करने को कहें।"
+    }
+  },
+  {
+    "id": "R-FR-01",
+    "intervention": "Heat-linked fire-risk advisory",
+    "required_fields": [
+      "built_environment.built_fraction"
+    ],
+    "evidence_ref": [
+      "EV-FIRE-RISK"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Qualitative; not a fire prediction",
+      "Fire services decide any public message"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "Hot spell with dense building or dry vegetation near {ward}: advise fire services and the electricity utility to watch for overload and dry-vegetation fires.",
+      "hi": "{ward} के पास घनी इमारतों या सूखी वनस्पति के साथ गर्म दौर: दमकल सेवा और बिजली कंपनी को ओवरलोड और सूखी वनस्पति की आग पर नज़र रखने की सलाह दें।"
+    }
+  },
+  {
+    "id": "R-DG-01",
+    "intervention": "Land-degradation field check",
+    "required_fields": [
+      "environment.degradation_signal"
+    ],
+    "evidence_ref": [
+      "EV-LAND-DEGRADATION"
+    ],
+    "evidence_grade": "C",
+    "caveats": [
+      "Indicator, not diagnosis",
+      "Vegetation also responds to rainfall"
+    ],
+    "audience": "staff",
+    "quantified": false,
+    "text": {
+      "en": "The land-degradation indicator for {ward} is moderate or strong: schedule a field check before acting.",
+      "hi": "{ward} के लिए भूमि क्षरण संकेतक मध्यम या तीव्र है: कार्रवाई से पहले क्षेत्र-निरीक्षण तय करें।"
+    }
   }
 ]

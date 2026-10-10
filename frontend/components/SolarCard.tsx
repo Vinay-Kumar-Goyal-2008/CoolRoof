@@ -6,6 +6,7 @@ import { useState } from "react";
 import { api, type SolarRequest } from "@/lib/api";
 import { fmt, useI18n } from "@/lib/i18n";
 import { ClassTag } from "./Badge";
+import { RoofSketch, type Outline } from "./RoofSketch";
 
 // Demo location (the synthetic city centre) and its synthetic DISCOM.
 const DEMO = { lat: 18.52, lon: 73.86, state: "TEST", discom: "TEST-DISCOM" } as const;
@@ -15,12 +16,14 @@ export function SolarCard() {
   const [area, setArea] = useState("70");
   const [units, setUnits] = useState("400");
   const [cost, setCost] = useState("180000");
+  const [outline, setOutline] = useState<Outline | null>(null);
 
   const build = (): SolarRequest => ({
     ...DEMO,
     roof_area_m2: Number(area) || undefined,
     avg_monthly_kwh: Number(units) || undefined,
     gross_cost_inr: Number(cost) || undefined,
+    roof_polygon: outline?.polygon,
   });
   const assess = useMutation({ mutationFn: () => api.assess(build()) });
   const pdf = useMutation({
@@ -41,6 +44,14 @@ export function SolarCard() {
           <input inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} /></label>
         <button type="submit" disabled={assess.isPending}>{assess.isPending ? t("loading") : t("check")}</button>
       </form>
+      <RoofSketch
+        centre={DEMO}
+        onUse={(o) => {
+          setOutline(o);
+          setArea(String(o.areaM2));
+        }}
+      />
+      {outline && <p className="muted small">✓ {fmt(outline.areaM2, 1)} m²</p>}
       {assess.error && <p className="warn">{t("error")}: {assess.error.message}</p>}
 
       {r && (

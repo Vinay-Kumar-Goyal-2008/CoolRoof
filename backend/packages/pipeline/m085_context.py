@@ -35,6 +35,7 @@ from packages.core.params import ParamRegistry
 from packages.pipeline.m01_location import WardLayer
 
 __all__ = [
+    "ALL_FIELD_SPECS",
     "BASE_FIELD_SPECS",
     "FeatureTable",
     "FieldSpec",
@@ -101,6 +102,32 @@ BASE_FIELD_SPECS: tuple[FieldSpec, ...] = (
     FieldSpec("environment.elevation_mean_m", "dem", "elevation_mean_m", 1),
     FieldSpec("environment.bare_fraction", "landcover", "bare_fraction", 3),
 )
+
+
+EXTRA_FIELD_SPECS: tuple[FieldSpec, ...] = (
+    # M20 facilities
+    FieldSpec("infrastructure.hospital_count", "infrastructure", "hospital_count", 0),
+    FieldSpec("infrastructure.school_count", "infrastructure", "school_count", 0),
+    FieldSpec("infrastructure.cooling_point_count", "infrastructure", "cooling_point_count", 0),
+    FieldSpec("infrastructure.nearest_hospital_m", "infrastructure", "nearest_hospital_m", 0),
+    FieldSpec(
+        "infrastructure.facilities_per_10k_exposed",
+        "infrastructure",
+        "facilities_per_10k_exposed",
+        2,
+    ),
+    # M24 trends
+    FieldSpec("environment.ndvi_trend_slope", "trend", "ndvi_trend_slope", 4),
+    FieldSpec("environment.bsi_trend_slope", "trend", "bsi_trend_slope", 4),
+    FieldSpec("environment.lst_trend_slope", "trend", "lst_trend_slope", 3),
+    FieldSpec("environment.degradation_signal", "trend", "degradation_signal", None),
+    # M22 + M23 hazards
+    FieldSpec("hazards.fire_events_30d", "hazard", "fire_events_30d", 0),
+    FieldSpec("hazards.protected_area_overlap", "hazard", "protected_area_overlap", 3),
+    FieldSpec("hazards.nearest_protected_area_m", "hazard", "nearest_protected_area_m", 0),
+    FieldSpec("hazards.habitat_pressure_max", "hazard", "habitat_pressure_max", None),
+)
+ALL_FIELD_SPECS: tuple[FieldSpec, ...] = (*BASE_FIELD_SPECS, *EXTRA_FIELD_SPECS)
 
 
 def _clean(value: Any, digits: int | None) -> Any:
@@ -221,6 +248,7 @@ def build_ward_contexts(
     run_date: date,
     flags: Mapping[str, list[str]] | None = None,
     administrative: Mapping[str, Mapping[str, ValueEnvelope]] | None = None,
+    extras: Mapping[str, Mapping[str, ValueEnvelope]] | None = None,
 ) -> list[WardContext]:
     """One ``WardContext`` per ward from the registered feature tables."""
     stale_after = (run_date + timedelta(days=int(params.require("P-STALE-CONTEXT")))).isoformat()
@@ -244,6 +272,12 @@ def build_ward_contexts(
         )
         for path_section, extra in (administrative or {}).get(ward_id, {}).items():
             sections["administrative"][path_section] = extra
+        # Non-tabular values (e.g. a driver list): ward_id → {"section.field": envelope}
+        for path, extra_env in (extras or {}).get(ward_id, {}).items():
+            section, _, name = path.partition(".")
+            if name not in CONTEXT_FIELDS.get(section, ()):
+                raise ValueError(f"{path} is not a spec context field")
+            sections[section][name] = extra_env
         ward_flags = list((flags or {}).get(ward_id, []))
         out.append(
             WardContext(

@@ -26,74 +26,68 @@ API Gateway, S3, DynamoDB, CDK) is written but **has not been deployed yet**.
 
 ## What is built, vs the original plan
 
-Status of the nine stages in `Agent/TASKS.md`:
+Every module in the plan now has code and tests. What remains is **deployment, live-service verification and real data** (below).
 
 | Stage | Plan | Status |
 |---|---|---|
-| 0 Scaffold | core, adapters, API skeleton, fixtures, CI | **Done** (local adapters; AWS adapters written, untested) |
-| 1 Heat pipeline | M1–M14, tile builder | **Done except the PMTiles tile builder** |
-| 2 SuryaCheck | M25–M32 | **Done**, with gaps listed below |
-| 3 Agent + PDF + UI MVP | M33–M36, M38, M39, M41 | **Mostly done**: 5 of 11 screens, no 30-turn golden suite |
-| 4 Heat intelligence | M15, M16, M17, M18+19, M20+21, M37, Cognito | **M15 and a compact M17 only**; rest deferred |
-| 5 Hazards + forecast | M22, M43 | **M43 on fixture data only**; M22 deferred |
-| 6 Environment | M23, M24 | **Deferred** |
-| 7 AWS deploy | CDK stacks, deploy | **2 of 6 stacks written, synthesise, never deployed** |
-| 8 Data-gated | electricity forecast, GMM, CNN, Aurora | Not started |
+| 0 Scaffold | core, adapters, API, fixtures, CI | **Done** (CI workflow, docker-compose, `.env.example`) |
+| 1 Heat pipeline | M1–M14, tile builder | **Done** incl. ΔLST PMTiles |
+| 2 SuryaCheck | M25–M32 | **Done** incl. NASA POWER + pvlib fallback, shared cache, roof outline |
+| 3 Agent + PDF + UI | M33–M36, M38, M39, M41 | **Done** (all 11 screens); 30-turn EN+HI golden suite; Strands engine unrun |
+| 4 Heat intelligence | M15–M21, M37, Cognito | **Done** (drivers, 10 rules, advisories + TTS, readiness, alerts hub, Cognito verification) |
+| 5 Hazards + forecast | M22, M43 | **Done**: FIRMS pipeline + incidents; forecast with Open-Meteo adapter, IMD-style check, hindcast scoring |
+| 6 Environment | M23, M24 | **Done** (habitat pressure index, degradation trends) |
+| 7 AWS deploy | CDK stacks | 2 of 6 stacks written; **never deployed** (owner's step) |
+| 8 Data-gated | electricity forecast, GMM, CNN, Aurora | Not started (needs data) |
 
 ### Module by module
 
 | Module | State | Notes |
 |---|---|---|
-| M1+2 location | ✅ | Point/name/polygon → ward, state, DISCOM; grid fallback. **No `/locations/resolve` HTTP route yet** |
-| M3+4 Landsat | ✅ fixture · ⚠️ live | Planetary Computer and USGS S3 sources written, never run against the real services |
-| M5 LST, M6 heat | ✅ | USGS L2 ST only; rural-reference ΔLST, hotspots, persistence, leave-one-year-out stability |
-| M7 footprints, M8 population | ✅ | Cleaning, ward aggregates, WorldPop allocation, neighbourhood-heat exposure |
-| M8.5 context builder | ✅ | Declarative `FieldSpec`s, value envelopes, staleness job, JSON-schema validated |
-| M9 priority | ✅ | Percentile / z-score, Dirichlet rank intervals, leave-one-out, property test |
-| M10–M14 roofs, cool-roof ranges, plan | ✅ code · ⚠️ output | Costs and °C effects are **unavailable until `P-CM2`, `P-DALB`, `P-KCOOL`, `P-KIND` are verified** |
-| M15 heat type | ✅ | Rule-based, precedence-ordered, authority brief. No GMM second opinion |
-| M16 driver attribution | ⛔ deferred | |
-| M17 recommendations | ⚠️ compact | 7 rules, evidence registry mostly placeholder (grade C → never Tier 1). Rules for deferred modules not built |
-| M18+19, M20+21, M22, M23, M24, M37 | ⛔ deferred | See `Agent/SCOPE_DEFERRED.md` for the reasoning and what changes elsewhere |
-| M25 solar resource | ⚠️ | Fixture + PVGIS path (untested live). **NASA POWER + pvlib fallback not built**; cache is in-memory |
-| M26 roof suitability | ⚠️ | Usable area, suitability flag, questions. `outline_changed` flag only partly implemented |
-| M27+28 size, M29 subsidy | ✅ | Subsidy is a generic tier calculator over a policy record; staleness warn/block |
-| M30+31 payback | ✅ | Net metering + net billing, scenario triples, status codes, 2.0-year golden fixture. True-up credit not modelled |
-| M32 orchestrator | ✅ | Pure, idempotent (`input_hash`), partial results, golden JSON |
-| M33+34 agent | ⚠️ | Deterministic engine works and is tested; **Strands engine (Bedrock / Anthropic) is written but never run**. 9 tools, grounding check, refusals |
-| M35+36 checklist, PDF | ✅ | fpdf2 + HarfBuzz, Noto Sans + Devanagari. No SVG roof outline; no 24 h URL expiry / 7-day lifecycle enforcement locally |
-| M38 dashboard | ⚠️ | 5 screens: map + ranking, ward panel (heat type, recommendations, roofs), SuryaCheck, assistant, PDF. **No ΔLST raster layer / PMTiles; screens 9 and 11 not built** |
-| M39 API | ⚠️ | health, wards, ward context / heat-type / buildings / recommendations, plan, heat-dome, solar, policy, checklist, PDF, sessions, chat. **Missing:** `locations/resolve`, `analysis/heat` (202), `admin/*` |
-| M40 storage, M41 auth, M42 monitoring | ⚠️ | DocStore + BlobStore done. Auth = anonymous sessions + API-key dependency (no planner routes, no Cognito). Monitoring = JSON logs + `/health` (no CloudWatch metrics/alarms) |
-| M43 heat-dome | ⚠️ | Ensemble criteria correct on the planted fixture. **No Open-Meteo/GFS adapter, no climatology job, no hindcast** |
+| M1+2 location | ✅ | `GET/POST /locations/resolve` (point, name in EN/HI, polygon) |
+| M3+4 Landsat | ✅ fixture · ⚠️ live | Planetary Computer / USGS S3 sources never run against the real services |
+| M5–M8, M8.5, M9 | ✅ | LST, ΔLST, hotspots, footprints, population, context builder (+ `extras` for lists), priority with rank intervals |
+| M10–M14 | ✅ code · ⚠️ output | Costs and °C effects stay `unavailable` until `P-CM2`, `P-DALB`, `P-KCOOL`, `P-KIND` are verified. Admins can set them with a source (`PUT /admin/config` or the console) |
+| M15 heat type | ✅ | Rule-based; no GMM second opinion |
+| M16 drivers | ✅ | 3×3 blocks, VIF, OLS + XGBoost/SHAP, spatial CV, Moran's I, bootstrap CI, "associated with" |
+| M17 recommendations | ✅ | 10 rules incl. R-RD/FR/DG, official-warning precedence, cooling-option matching. Evidence mostly placeholder (grade C) |
+| M18+19 advisories + TTS | ✅ | Compose from whitelisted advice, optional grounded rewrite, approval workflow, EN Deepgram / HI Polly (stub offline), cache, cap |
+| M20+21 readiness | ✅ / ⛔ | Facility table + prompts HOSP/EXAM/COOL/ELEC. Electricity *forecast* mode not built (data-gated) |
+| M22 fire | ✅ | FIRMS normalise → dedupe → cluster → classify → persistent suppression → alert rule; staff incidents with 2-person confirmation; fixture + live source |
+| M23 habitat | ✅ | HPI per protected area, PA_FIRE_*/PRESSURE_RISE warnings, wording denylist |
+| M24 degradation | ✅ | Mann–Kendall + Sen, rain adjustment, leave-one-year-out stability, transition alerts |
+| M25–M32 SuryaCheck | ✅ | PVGIS → NASA POWER+pvlib → stale cache; true-up credit not modelled |
+| M33+34 agent | ⚠️ | Deterministic engine tested; **Strands engine (Bedrock / Anthropic) written, never run**. 17 tools, keyword intents, grounding check, refusals |
+| M35+36 PDF | ✅ | Noto Sans + Devanagari, vector roof outline |
+| M37 alerts | ✅ | Dedupe, rate limit, expiry, approval gates, audit, hashed subscriptions, one publish per language (SNS adapter untested) |
+| M38 dashboard | ✅ | 11 screens: map with ΔLST raster, hotspots, facilities, fire, protected areas, degradation colouring; ward panel (drivers, readiness, land); solar with roof sketch; assistant; alerts & forecast with audio; planner console |
+| M39 API | ✅ | Every route in spec §6 (plus `/layers`, `/tiles`, `/audio`, `/admin/params`, `/admin/metrics`) |
+| M40–M42 | ⚠️ | DocStore/BlobStore done; auth = API keys + `X-Actor` or Cognito Bearer; metrics = CloudWatch EMF lines + `/admin/metrics` (no alarms/dashboards yet) |
+| M43 heat-dome | ⚠️ | Fixture ensemble correct; live Open-Meteo path is temperature-only (capped at `watch`); hindcast scoring code ready, not run on real archives |
 
 ### Tests
 
-`uv run poe test` — **199 backend tests** (unit, property, golden, end-to-end through the real API incl. Hindi PDF
-text and the grounded agent), ~5 minutes. `ruff` clean, `mypy --strict` clean (relaxed only for the numerical
-pipeline modules, whose pandas stubs are noisy). `npm run test:e2e` — 2 Playwright tests in real Chromium.
+`uv run poe test` — backend unit, property, golden and end-to-end suites (~6 min; the e2e files run the real API, the
+pipeline, advisories, alerts, incidents, auth and the 30-turn conversation). `ruff` clean, `mypy` clean.
+`npm run test:e2e` in `frontend/` — 5 Playwright tests in real Chromium (needs API on :8000 and the app running).
 
 ## What is left (start here)
 
-Work in this order; it follows the value for a working demo and the open risks.
+Everything that can run offline is done. In order:
 
-1. **Deploy to AWS** (needs credentials + Docker): `cd infra; npx cdk deploy --all`, then load data with
-   `RUNTIME=aws python -m scripts.run_pipeline --city mini_city`. Fix whatever the first real deploy exposes.
-   The `S3BlobStore`, `DynamoDocStore`, `SNSNotifier`, `SecretsManagerSecrets` and `PollyTTS` adapters have never run.
-2. **Run the Strands engine against Bedrock** (set `BEDROCK_MODEL_ID` with `RUNTIME=aws`, or `ANTHROPIC_API_KEY` locally).
-   Verify the grounding check and fallback behave with a real model, then write the 30-turn golden conversation suite (en + hi).
-3. **Close the cheap API gaps:** `GET /locations/resolve`, `POST /analysis/heat` + `GET /analysis/heat/{id}`, `admin/*`.
-4. **Replace placeholders with verified values** (this is data work, not code): coating cost `P-CM2`, cool-roof
-   coefficients `P-DALB/KCOOL/KIND` (literature + a 10–20 roof pilot), `P-GCOST`, real DISCOM tariff and net-metering
-   records (only a *synthetic* tariff exists), and the evidence registry. Each is listed in `docs/GAPS.md` §3–4.
-5. **Run a real city.** `backend/config/cities/pune.yaml` is a stub: it needs the ward layer, building footprints,
-   WorldPop, WorldCover, DEM and facilities. Then validate LST against MODIS.
-6. **Finish the planned UI/data bits:** PMTiles / ΔLST raster layer (tile builder), NASA POWER + pvlib solar fallback,
-   SVG roof outline in the PDF, remaining dashboard screens.
-7. **Deferred modules** (M16, M18+19, M20+21, M22, M23, M24, M37, Cognito): the specs are intact; `Agent/SCOPE_DEFERRED.md`
-   explains how to bring one back (add the module, register its table with a `FieldSpec`, add router + tests from its Verify bullets).
-8. **Stage 7 remainder:** pipeline (Step Functions / Fargate), frontend (Amplify), alerts (EventBridge/SNS), monitoring
-   (CloudWatch, Budgets) stacks.
+1. **Deploy to AWS** (needs credentials + Docker): `cd infra; npx cdk deploy --all`, load data with
+   `RUNTIME=aws python -m scripts.run_pipeline --city mini_city`. Fix what the first real deploy exposes. The
+   `S3BlobStore`, `DynamoDocStore`, `SNSNotifier`, `SecretsManagerSecrets`, `PollyTTS` and Cognito paths have never run.
+   Not yet written: Step Functions/Fargate pipeline stack, Amplify, EventBridge schedules for `scripts/run_jobs.py`, CloudWatch alarms.
+2. **Run the Strands engine** against Bedrock (`BEDROCK_MODEL_ID`, `RUNTIME=aws`) or Anthropic (`ANTHROPIC_API_KEY`); rerun the golden
+   conversation through it and confirm the grounding fallback.
+3. **Verify live services**: Open-Meteo, NASA POWER, FIRMS (`FIRMS_MAP_KEY`) and PVGIS field names are [R] and only mocked in tests. Add
+   Z500 climatology to lift the live forecast above `watch`; run `m43_eval` on archived 2022/2024 heatwave forecasts.
+4. **Replace placeholders with verified values** (data work): `P-CM2`, `P-DALB/KCOOL/KIND`, `P-GCOST`, real DISCOM tariff and
+   net-metering records, the evidence registry, advice lines reviewed by a native Hindi speaker and the health authority.
+5. **Run a real city.** `backend/config/cities/pune.yaml` is a stub: it needs ward layer, footprints, WorldPop, WorldCover, DEM,
+   facilities, protected areas and a hot-season `trend_series`. Validate LST against MODIS.
+6. **Data-gated extras**: electricity forecast mode, GMM heat-type second opinion, CNN, Aurora.
 
 ## Run it locally
 
@@ -111,7 +105,9 @@ npm run dev                  # http://localhost:3000  (proxies /api to :8000)
 ```
 
 Other tasks: `uv run poe` lists them (`ci`, `test`, `lint`, `typecheck`, `fixtures`, `seed`).
-Copy `backend/.env.example` to `backend/.env` to add optional keys (all are optional; stubs are used otherwise).
+Copy `backend/.env.example` to `backend/.env` (it sets `PLANNER_API_KEY=dev-planner-key` and `ADMIN_API_KEY=dev-admin-key` for the
+planner console; other keys are optional and stubs are used without them). Jobs by hand: `uv run python -m scripts.run_jobs fire|heatdome|stale`;
+set `ENABLE_JOBS=true` to schedule them inside the API.
 Browser tests: start the API and `npm start`, then `npm run test:e2e` in `frontend/`.
 
 **Demo inputs:** 70 m² roof, 400 units/month, ₹1,80,000 quote → 3 kW, ₹78,000 subsidy, payback range.

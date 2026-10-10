@@ -31,7 +31,12 @@ def solar_inputs(state: StateDep) -> SolarInputs:
     return SolarInputs(
         state.params,
         PolicyStore(state.adapters.docstore),
-        SolarSource(fixture, live=s.solar_source == "live"),
+        SolarSource(
+            fixture,
+            live=s.solar_source == "live",
+            cache=state.adapters.docstore,
+            gamma_pdc=state.params.get("P-GAMMA"),
+        ),
     )
 
 

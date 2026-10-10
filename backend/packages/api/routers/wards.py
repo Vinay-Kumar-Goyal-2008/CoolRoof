@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from packages.api.deps import StateDep
 from packages.api.envelope import ApiResponse, ok
+from packages.api.routers._common import CityQ, repo_of, signals_of
 from packages.core.city import load_city
 from packages.core.context import WardContext
 from packages.core.errors import IncompleteError, NotFoundError
@@ -16,14 +17,8 @@ from packages.pipeline.m09_priority import WardScore
 from packages.pipeline.m11_coolroof import assess_roofs
 from packages.pipeline.m14_actions import build_action_plan
 from packages.services.m17_reco import load_rules, recommend
-from packages.services.repository import Repository
 
 router = APIRouter(tags=["wards"])
-CityQ = Annotated[str, Query(description="city slug", pattern="^[a-z0-9_]{2,40}$")]
-
-
-def repo_of(state: StateDep) -> Repository:
-    return Repository(state.adapters.docstore, state.adapters.blobstore)
 
 
 @router.get("/wards", response_model=ApiResponse[dict[str, Any]])
@@ -43,6 +38,20 @@ def list_wards(request: Request, state: StateDep, city: CityQ = "mini_city") -> 
                 "mean_dlst_c": ctx["heat"].get("mean_dlst_c"),
                 "population": ctx["population"].get("population"),
                 "exposed_population": ctx["population"].get("exposed_population"),
+                "degradation_signal": ctx.get("environment", {})
+                .get("degradation_signal", {})
+                .get("value"),
+                "habitat_pressure_max": ctx.get("hazards", {})
+                .get("habitat_pressure_max", {})
+                .get("value"),
+                "fire_events_30d": ctx.get("hazards", {}).get("fire_events_30d", {}).get("value"),
+                "hospital_count": ctx.get("infrastructure", {})
+                .get("hospital_count", {})
+                .get("value"),
+                "nearest_hospital_m": ctx.get("infrastructure", {})
+                .get("nearest_hospital_m", {})
+                .get("value"),
+                "heatdome_risk": ctx["heat"].get("heatdome_risk", {}).get("value"),
                 "data_quality": ctx["data_quality"],
             }
         )
@@ -59,6 +68,9 @@ def list_wards(request: Request, state: StateDep, city: CityQ = "mini_city") -> 
             "normalisation": manifest["normalisation"],
             "sensitivity": manifest["sensitivity"],
             "scenes": manifest["scenes"],
+            "layers": manifest.get("layers", {}),
+            "fire_as_of": manifest.get("fire_as_of"),
+            "signals": signals_of(state, city).to_dict(),
         },
         request,
         context_version=manifest["context_version"],
@@ -154,6 +166,7 @@ def recommendations(
         rules,
         state.params,
         lang,
+        official_warning=signals_of(state, city).official,
     )
     return ok(result, request, context_version=result["context_version"])
 

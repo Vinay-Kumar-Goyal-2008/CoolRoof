@@ -4,7 +4,8 @@
     "rules": [
       "R-CR-01",
       "R-CP-01",
-      "R-EC-01"
+      "R-EC-01",
+      "R-FR-01"
     ],
     "check": [
       "Roof materials and available terraces",
@@ -20,7 +21,8 @@
     "means": "Persistently hot with low built share and low vegetation: bare ground or industrial land.",
     "rules": [
       "R-GR-01",
-      "R-EC-01"
+      "R-EC-01",
+      "R-DG-01"
     ],
     "check": [
       "Land use and ownership",

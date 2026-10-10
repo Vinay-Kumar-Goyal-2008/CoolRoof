@@ -67,7 +67,11 @@ def test_recommendations_carry_evidence_and_not_evaluated(client: TestClient) ->
     data = client.get("/wards/W07/recommendations").json()["data"]
     assert data["recommendations"]
     assert all(r["evidence"] for r in data["recommendations"])
-    assert {r["id"] for r in data["not_evaluated"]} >= {"R-HD-01"}
+    fired = {r["id"] for r in data["recommendations"]}
+    assert (
+        "R-HD-01" in fired
+    )  # the fixture forecast is elevated/high and is patched into the context
+    assert isinstance(data["not_evaluated"], list)
     hindi = client.get("/wards/W07/recommendations", params={"lang": "hi"}).json()["data"]
     assert hindi["recommendations"][0]["text"] != data["recommendations"][0]["text"]
 

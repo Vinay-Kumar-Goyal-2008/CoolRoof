@@ -12,6 +12,7 @@ from packages.agent.m33_agent import AgentRuntime, AgentSession, MockEngine, Str
 from packages.agent.tools import AgentTools
 from packages.api.deps import AppState, StateDep
 from packages.api.envelope import ApiResponse, ok
+from packages.api.routers._common import hub_of
 from packages.api.routers.health import engine_version
 from packages.api.routers.solar import solar_inputs
 from packages.core.city import load_city
@@ -57,6 +58,8 @@ def _runtime(state: AppState, city_slug: str) -> AgentRuntime:
         rules_version=s.rules_version,
         engine_version=engine_version(),
         city=city_slug,
+        docs=state.adapters.docstore,
+        hub=hub_of(state),
     )
     mock = MockEngine(discom.state, discom.discom, c_lat, c_lon)
     engine: Any = mock

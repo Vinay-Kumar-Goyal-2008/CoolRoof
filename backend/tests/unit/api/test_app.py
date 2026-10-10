@@ -60,6 +60,6 @@ def test_planner_routes_require_api_key(settings: AppSettings) -> None:
         data_dir=settings.data_dir, planner_api_key="s3cret-planner", _env_file=None
     )
     client = _client(keyed)
-    assert client.get("/_planner").status_code == 403
-    assert client.get("/_planner", headers={"X-API-Key": "wrong"}).status_code == 403
+    assert client.get("/_planner").status_code == 401  # authentication required
+    assert client.get("/_planner", headers={"X-API-Key": "wrong"}).status_code == 401
     assert client.get("/_planner", headers={"X-API-Key": "s3cret-planner"}).status_code == 200

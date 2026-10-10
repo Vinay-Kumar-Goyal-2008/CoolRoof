@@ -61,6 +61,42 @@ EVIDENCE: list[dict[str, Any]] = [
         "reviewed_on": None,
         "status": "NV",
     },
+    {
+        "id": "EV-FIRE-RISK",
+        "title": "Heat-linked fire risk guidance (to be curated)",
+        "publisher": "to be curated",
+        "url": None,
+        "claim": "Extreme heat raises electrical-overload and dry-vegetation fire risk; fire services should be alerted",
+        "grade": "C",
+        "context_tags": ["fire_risk"],
+        "reviewed_by": None,
+        "reviewed_on": None,
+        "status": "NV",
+    },
+    {
+        "id": "EV-LAND-DEGRADATION",
+        "title": "Land-degradation indicators, SDG 15.3.1 productivity sub-indicator (to be curated)",
+        "publisher": "UNCCD / to be curated",
+        "url": None,
+        "claim": "Declining vegetation productivity together with rising bare-soil index and temperature signals possible land degradation",
+        "grade": "C",
+        "context_tags": ["degradation"],
+        "reviewed_by": None,
+        "reviewed_on": None,
+        "status": "NV",
+    },
+    {
+        "id": "EV-HEALTH-READINESS",
+        "title": "Heat-health readiness guidance for health facilities (to be curated)",
+        "publisher": "to be curated",
+        "url": None,
+        "claim": "Facilities should confirm readiness before forecast extreme heat; this tool never states beds or stock",
+        "grade": "C",
+        "context_tags": ["readiness"],
+        "reviewed_by": None,
+        "reviewed_on": None,
+        "status": "NV",
+    },
 ]
 
 
@@ -177,6 +213,42 @@ RULES = [
         "Schools in {ward} may need heat precautions during the forecast signal.",
         "पूर्वानुमान संकेत के दौरान {ward} के स्कूलों में गर्मी से बचाव ज़रूरी हो सकता है।",
     ),
+    _rule(
+        "R-RD-01",
+        "Facility readiness check",
+        ["population.exposed_population"],
+        ["EV-HEALTH-READINESS"],
+        "C",
+        ["Prompts ask officers to confirm readiness; no bed, stock or demand data is used"],
+        "staff",
+        False,
+        "High heat exposure in {ward} during a warning or forecast signal: ask health and utility officers to confirm readiness.",
+        "चेतावनी या पूर्वानुमान संकेत के दौरान {ward} में गर्मी का संपर्क अधिक है: स्वास्थ्य और बिजली अधिकारियों से तैयारी की पुष्टि करने को कहें।",
+    ),
+    _rule(
+        "R-FR-01",
+        "Heat-linked fire-risk advisory",
+        ["built_environment.built_fraction"],
+        ["EV-FIRE-RISK"],
+        "C",
+        ["Qualitative; not a fire prediction", "Fire services decide any public message"],
+        "staff",
+        False,
+        "Hot spell with dense building or dry vegetation near {ward}: advise fire services and the electricity utility to watch for overload and dry-vegetation fires.",
+        "{ward} के पास घनी इमारतों या सूखी वनस्पति के साथ गर्म दौर: दमकल सेवा और बिजली कंपनी को ओवरलोड और सूखी वनस्पति की आग पर नज़र रखने की सलाह दें।",
+    ),
+    _rule(
+        "R-DG-01",
+        "Land-degradation field check",
+        ["environment.degradation_signal"],
+        ["EV-LAND-DEGRADATION"],
+        "C",
+        ["Indicator, not diagnosis", "Vegetation also responds to rainfall"],
+        "staff",
+        False,
+        "The land-degradation indicator for {ward} is moderate or strong: schedule a field check before acting.",
+        "{ward} के लिए भूमि क्षरण संकेतक मध्यम या तीव्र है: कार्रवाई से पहले क्षेत्र-निरीक्षण तय करें।",
+    ),
 ]
 
 COOLING = [
@@ -224,10 +296,48 @@ COOLING = [
     },
 ]
 
+# Whitelisted advice lines for public advisories (M18+19). No numbers. Reviewed_by is empty on
+# purpose: a native Hindi speaker and the health authority must approve before public use.
+ADVICE = {
+    "status": "NV - needs review by a native Hindi speaker and the local health authority",
+    "lines": {
+        "hydrate": {
+            "en": "Drink water often, even if you do not feel thirsty.",
+            "hi": "प्यास न लगने पर भी बार-बार पानी पिएँ।",
+        },
+        "avoid_midday": {
+            "en": "Avoid going out in the hottest part of the day.",
+            "hi": "दिन के सबसे गर्म समय में बाहर जाने से बचें।",
+        },
+        "cool_home": {
+            "en": "Keep your home cool: use curtains, ventilation and shade.",
+            "hi": "घर को ठंडा रखें: पर्दे, हवा के आवागमन और छाया का उपयोग करें।",
+        },
+        "check_vulnerable": {
+            "en": "Check on older neighbours, young children and people who are ill.",
+            "hi": "बुज़ुर्ग पड़ोसियों, छोटे बच्चों और बीमार लोगों का हाल पूछें।",
+        },
+        "cooling_point": {
+            "en": "Use a public cooling point if your home is very hot.",
+            "hi": "घर बहुत गर्म हो तो सार्वजनिक शीतलन स्थल का उपयोग करें।",
+        },
+        "schools": {
+            "en": "Schools and event organisers should plan shade, water and shorter outdoor time.",
+            "hi": "स्कूल और आयोजक छाया, पानी और बाहर कम समय की योजना बनाएँ।",
+        },
+    },
+    "by_type": {
+        "heatwave_relay": ["hydrate", "avoid_midday", "check_vulnerable"],
+        "heatdome_forecast": ["hydrate", "avoid_midday", "cool_home", "check_vulnerable"],
+        "exam_event": ["schools", "hydrate", "avoid_midday"],
+        "fire_confirmed": ["avoid_midday"],
+    },
+}
+
 BRIEFS = {
     "dense_built_low_green": {
         "means": "Persistently hot, densely built with little vegetation.",
-        "rules": ["R-CR-01", "R-CP-01", "R-EC-01"],
+        "rules": ["R-CR-01", "R-CP-01", "R-EC-01", "R-FR-01"],
         "check": [
             "Roof materials and available terraces",
             "Nearest public buildings for cooling points",
@@ -236,7 +346,7 @@ BRIEFS = {
     },
     "open_bare_or_industrial": {
         "means": "Persistently hot with low built share and low vegetation: bare ground or industrial land.",
-        "rules": ["R-GR-01", "R-EC-01"],
+        "rules": ["R-GR-01", "R-EC-01", "R-DG-01"],
         "check": ["Land use and ownership", "Industrial heat sources (not visible to Landsat)"],
         "departments": ["Town planning", "Industries", "Urban forestry"],
     },
@@ -290,7 +400,7 @@ def main() -> None:
         "cooling_options": COOLING,
         "heat_type_briefs": BRIEFS,
         "glossary": GLOSSARY,
-        "advice": {"note": "advisories are deferred (see Agent/SCOPE_DEFERRED.md)"},
+        "advice": ADVICE,
     }
     for name, obj in files.items():
         (OUT / f"{name}.json").write_text(

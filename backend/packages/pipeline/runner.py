@@ -7,6 +7,7 @@ dataset skips its step and the context shows ``unavailable`` for its fields.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -26,6 +27,7 @@ from packages.adapters.landsat_source import (
 from packages.core.city import CityConfig
 from packages.core.context import RoofContext, WardContext
 from packages.core.enums import Runtime, ValueClass
+from packages.core.envelope import ValueEnvelope
 from packages.core.ids import context_version, new_run_id
 from packages.core.logging import bind_context, get_logger
 from packages.core.params import ParamRegistry
@@ -40,13 +42,24 @@ from packages.pipeline.m06_heat import HeatFeatures, compute_heat
 from packages.pipeline.m07_buildings import BuildingsResult, process_buildings
 from packages.pipeline.m08_population import PopulationResult, allocate_population
 from packages.pipeline.m085_context import (
-    BASE_FIELD_SPECS,
+    ALL_FIELD_SPECS,
     FeatureTable,
     build_roof_contexts,
     build_ward_contexts,
 )
 from packages.pipeline.m09_priority import PriorityResult, score_wards
 from packages.pipeline.m11_coolroof import RoofAssessment, assess_roofs
+from packages.pipeline.m16_drivers import DriverResult, attribute_drivers
+from packages.pipeline.m20_facilities import facility_table, weighted_centroids
+from packages.pipeline.m22_fire import (
+    FireEvent,
+    FirmsFixtureSource,
+    FirmsSource,
+    detect_fires,
+    ward_event_counts,
+)
+from packages.pipeline.m23_habitat import PAPressure, compute_habitat_pressure, ward_pressure_table
+from packages.pipeline.m24_degradation import UnitTrends, compute_trends, context_table
 
 __all__ = ["HeatPipeline", "PipelineRun", "landsat_source_for"]
 
@@ -84,6 +97,13 @@ class PipelineRun:
     priority: PriorityResult | None = None
     roof_assessments: list[RoofAssessment] = field(default_factory=list)
     roof_contexts: list[RoofContext] = field(default_factory=list)
+    drivers: DriverResult | None = None
+    facilities: pd.DataFrame | None = None
+    trends: dict[str, UnitTrends] = field(default_factory=dict)
+    fire_events: list[FireEvent] = field(default_factory=list)
+    fire_as_of: date | None = None
+    habitat: list[PAPressure] = field(default_factory=list)
+    habitat_table: pd.DataFrame | None = None
     steps: list[str] = field(default_factory=list)
     extras: dict[str, Any] = field(default_factory=dict)
 
@@ -115,6 +135,7 @@ class HeatPipeline:
         *,
         run_date: date | None = None,
         run_id: str | None = None,
+        firms: FirmsSource | None = None,
     ) -> None:
         self.run = PipelineRun(
             city=city,
@@ -124,6 +145,7 @@ class HeatPipeline:
             run_date=run_date or utc_today(),
         )
         self._landsat = landsat
+        self._firms = firms
 
     # ------------------------------------------------------------------ M1–M6
     def locate(self) -> WardLayer:
@@ -211,6 +233,138 @@ class HeatPipeline:
         r.steps.append("M8")
         return r.population
 
+    # ------------------------------------------------------------------ M16, M20, M22-M24
+    def heat_drivers(self) -> DriverResult | None:
+        r = self.run
+        heat = r.require(r.heat, "M6")
+        stack = r.require(r.stack, "M3+4")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            ndbi = np.nanmedian(stack.ndbi, axis=0)
+        wards = r.require(r.wards, "M1+2")
+        r.drivers = attribute_drivers(
+            r.require(r.grid, "M1+2"),
+            heat.dlst_c,
+            heat.ndvi,
+            ndbi,
+            r.landcover,
+            r.dem,
+            r.buildings.buildings if r.buildings is not None else None,
+            wards.wards_utm,
+            wards.ward_ids(),
+            r.params,
+        )
+        if r.drivers is not None:
+            r.steps.append("M16")
+        return r.drivers
+
+    def facility_coverage(self) -> pd.DataFrame | None:
+        r = self.run
+        wards = r.require(r.wards, "M1+2")
+        ids = wards.ward_ids()
+        centroids = weighted_centroids(
+            r.buildings.buildings if r.buildings is not None else None,
+            r.population.building_pop if r.population is not None else None,
+            wards.wards_utm,
+            ids,
+        )
+        exposed = r.population.ward_table["exposed_population"] if r.population else None
+        r.facilities = facility_table(
+            r.inputs.facilities, wards.wards_utm, ids, centroids, exposed, r.params
+        )
+        if r.facilities is not None:
+            r.steps.append("M20")
+        return r.facilities
+
+    def degradation(self) -> dict[str, UnitTrends]:
+        r = self.run
+        built: dict[str, float] = {}
+        if r.heat is not None and "wc_built_fraction" in r.heat.table:
+            built = r.heat.table["wc_built_fraction"].dropna().to_dict()
+        r.trends = compute_trends(r.inputs.trend_series, built, r.params)
+        if r.trends:
+            r.steps.append("M24")
+        return r.trends
+
+    def fire_detection(self) -> list[FireEvent]:
+        r = self.run
+        source = self._firms or FirmsFixtureSource(r.inputs.firms_path)
+        wards = r.require(r.wards, "M1+2")
+        raw = source.fetch(r.city.bbox, 10)
+        if raw is None or raw.empty:
+            return []
+        # Fixture data is old by construction: evaluate "as of" its last pass so the 30-day window is meaningful.
+        as_of = (
+            pd.to_datetime(raw["acq_date"]).max().date()
+            if isinstance(source, FirmsFixtureSource)
+            else r.run_date
+        )
+        r.fire_as_of = as_of
+        facilities = r.inputs.facilities
+        hospitals = facilities[facilities["kind"] == "hospital"] if facilities is not None else None
+        r.fire_events = detect_fires(
+            raw,
+            grid=r.require(r.grid, "M1+2"),
+            landcover=r.landcover,
+            wards_utm=wards.wards_utm,
+            ward_ids=wards.ward_ids(),
+            protected_areas=r.inputs.protected_areas,
+            hospitals=hospitals,
+            params=r.params,
+            as_of=as_of,
+        )
+        r.steps.append("M22")
+        return r.fire_events
+
+    def habitat_pressure(self) -> list[PAPressure]:
+        r = self.run
+        wards = r.require(r.wards, "M1+2")
+        r.habitat = compute_habitat_pressure(
+            r.inputs.protected_areas,
+            r.inputs.trend_series,
+            r.fire_events,
+            r.params,
+            r.city.utm_crs,
+        )
+        r.habitat_table = ward_pressure_table(
+            r.habitat, r.inputs.protected_areas, wards.wards_utm, wards.ward_ids()
+        )
+        if r.habitat:
+            r.steps.append("M23")
+        return r.habitat
+
+    def _driver_extras(self) -> dict[str, dict[str, ValueEnvelope]]:
+        r = self.run
+        if r.drivers is None:
+            return {}
+        processed = r.run_date.isoformat()
+        ref = f"drivers/{r.city.slug}/{r.context_version}"
+        out: dict[str, dict[str, ValueEnvelope]] = {}
+        for wid, wd in r.drivers.wards.items():
+            if wd.status != "ok":
+                out[wid] = {
+                    "heat.top_drivers": ValueEnvelope.unavailable(
+                        "m16_drivers", f"driver attribution: {wd.status}"
+                    )
+                }
+                continue
+            top = [
+                {k: d[k] for k in ("feature", "contribution_c", "direction", "stable")}
+                for d in wd.top
+            ]
+            out[wid] = {
+                "heat.top_drivers": ValueEnvelope.of(
+                    top,
+                    ValueClass.DERIVED,
+                    "m16_drivers; xgboost+shap; associated with (correlational)",
+                    processed=processed,
+                    resolution_m=90.0,
+                    assumptions=("P-DRIVER-BLOCK", "P-DRIVER-CV"),
+                ),
+                "heat.drivers_ref": ValueEnvelope.of(ref, ValueClass.DERIVED, "m16_drivers"),
+            }
+        return out
+
     # ------------------------------------------------------------------ M8.5
     def feature_tables(self) -> list[FeatureTable]:
         r = self.run
@@ -269,6 +423,42 @@ class HeatPipeline:
                 assumptions=("P-TAU",),
             )
         )
+        tables.append(
+            FeatureTable(
+                "infrastructure",
+                r.facilities,
+                source="facilities dataset; straight-line distances",
+                assumptions=("P-COVER",),
+                missing_reason="facility dataset not provided",
+            )
+        )
+        tables.append(
+            FeatureTable(
+                "trend",
+                context_table(r.trends) if r.trends else None,
+                source="landsat_c2l2_st hot-season yearly medians; Mann-Kendall + Sen slope",
+                assumptions=("P-TREND-MIN", "P-TREND-ALPHA", "P-COVMIN"),
+                missing_reason="trend series not provided",
+            )
+        )
+        hazard_frame = r.habitat_table.copy() if r.habitat_table is not None else None
+        if r.fire_events or r.fire_as_of:
+            counts = ward_event_counts(
+                r.fire_events, r.require(r.wards, "M1+2").ward_ids(), r.fire_as_of or r.run_date
+            )
+            hazard_frame = (
+                counts.to_frame()
+                if hazard_frame is None
+                else hazard_frame.join(counts, how="outer")
+            )
+        tables.append(
+            FeatureTable(
+                "hazard",
+                hazard_frame,
+                source="nasa_firms (last satellite pass); protected areas",
+                missing_reason="hazard datasets not provided",
+            )
+        )
         return tables
 
     def ward_flags(self) -> dict[str, list[str]]:
@@ -296,12 +486,13 @@ class HeatPipeline:
         r.contexts = build_ward_contexts(
             r.require(r.wards, "M1+2"),
             self.feature_tables(),
-            BASE_FIELD_SPECS,
+            ALL_FIELD_SPECS,
             r.params,
             context_version=r.context_version,
             run_id=r.run_id,
             run_date=r.run_date,
             flags=self.ward_flags(),
+            extras=self._driver_extras(),
         )
         r.steps.append("M8.5")
         return r.contexts
@@ -356,6 +547,11 @@ class HeatPipeline:
         self.heat_analysis()
         self.building_footprints()
         self.population_exposure()
+        self.heat_drivers()
+        self.facility_coverage()
+        self.degradation()
+        self.fire_detection()
+        self.habitat_pressure()
         self.build_contexts()
         self.prioritise()
         self.assess_roofs()

@@ -63,6 +63,13 @@ class AppSettings(BaseSettings):
     planner_api_key: SecretStr | None = None
     admin_api_key: SecretStr | None = None
     session_ttl_hours: int = 24
+    enable_jobs: bool = False  # schedule fire poll / daily forecast / staleness locally
+    advisory_two_person: bool = False
+    tts_daily_cap: int = 200
+
+    # Cognito (optional): when set, Bearer ID/access tokens are verified and mapped to roles
+    cognito_issuer: str | None = None  # https://cognito-idp.<region>.amazonaws.com/<pool-id>
+    cognito_client_id: str | None = None
     agent_timeout_s: float = 25.0
     agent_max_turns: int = 40
 

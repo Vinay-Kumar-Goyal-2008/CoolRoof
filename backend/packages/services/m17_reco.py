@@ -5,7 +5,7 @@ unavailable or stale goes to ``not_evaluated`` with the missing fields. A rule t
 carries its evidence and a grade equal to the minimum grade of its evidence. Ranking:
 Tier 1 = quantified rules with grade A/B; Tier 2 = everything else, ordered by grade.
 Grade C never enters Tier 1. Text is template-rendered — no LLM, no invented numbers.
-Rules for deferred modules (readiness, fire risk, degradation) are not implemented.
+Official warnings (manual IMD entries) take precedence over the M43 forecast signal.
 """
 
 from __future__ import annotations
@@ -21,9 +21,10 @@ from packages.core.enums import HeatDomeRisk, HeatType
 from packages.core.errors import InputValidationError
 from packages.core.params import ParamRegistry
 
-__all__ = ["RuleSet", "load_rules", "recommend"]
+__all__ = ["RuleSet", "city_percentiles", "load_rules", "matched_cooling", "recommend"]
 
 _GRADE_ORDER = {"A": 0, "B": 1, "C": 2}
+_SIGNAL_RULES = frozenset({"R-HD-01", "R-EX-01", "R-RD-01", "R-FR-01"})
 
 
 @dataclass(frozen=True)
@@ -66,10 +67,19 @@ def _conditions(params: ParamRegistry) -> dict[str, Condition]:
         "R-EC-01": lambda c, p, x: (
             x.get("heat_type") not in (None, HeatType.NOT_HOT.value, HeatType.UNDETERMINED.value)
         ),
-        "R-HD-01": lambda c, p, x: x["heatdome_rank"] >= HeatDomeRisk.ELEVATED.rank,
+        "R-HD-01": lambda c, p, x: x["signal"],
         "R-EX-01": lambda c, p, x: (
-            x["heatdome_rank"] >= HeatDomeRisk.ELEVATED.rank
+            x["signal"]
+            and (c.value("infrastructure.school_count") or 0) > 0
             and x.get("heat_type") not in (None, HeatType.NOT_HOT.value)
+        ),
+        "R-RD-01": lambda c, p, x: x["signal"] and p["exposed"] >= th["exp"],
+        "R-FR-01": lambda c, p, x: (
+            x["signal"]
+            and (p["built"] >= th["exp"] or (c.value("hazards.fire_events_30d") or 0) > 0)
+        ),
+        "R-DG-01": lambda c, p, x: (
+            c.value("environment.degradation_signal") in ("moderate", "strong")
         ),
     }
 
@@ -99,6 +109,7 @@ def city_percentiles(contexts: list[WardContext]) -> dict[str, dict[str, float]]
         "ndvi": pct(column("environment.ndvi_mean")),
         "bare": pct(column("environment.bare_fraction")),
         "heat": pct(column("heat.mean_dlst_c")),
+        "built": pct(column("built_environment.built_fraction")),
     }
 
 
@@ -110,31 +121,40 @@ def recommend(
     rules: RuleSet,
     params: ParamRegistry,
     lang: str = "en",
+    official_warning: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     ctx = next(c for c in contexts if c.ward_id == ward_id)
     pcts = city_percentiles(contexts)
-    p = {k: pcts[k].get(ward_id, float("nan")) for k in ("roof", "exposed", "ndvi", "bare")}
+    p = {
+        k: pcts[k].get(ward_id, float("nan")) for k in ("roof", "exposed", "ndvi", "bare", "built")
+    }
     p["priority"] = priority_pct if priority_pct is not None else float("nan")
-    hd = ctx.value("heat.heatdome_risk")
+    hd = (
+        ctx.value("heat.heatdome_risk") if ctx.field("heat.heatdome_risk").is_usable_fresh else None
+    )
+    heatdome_rank = HeatDomeRisk(hd).rank if hd else HeatDomeRisk.UNAVAILABLE.rank
+    signal_available = official_warning is not None or hd is not None
     extra = {
         "heat_type": heat_type,
-        "heatdome_rank": HeatDomeRisk(hd).rank if hd else HeatDomeRisk.UNAVAILABLE.rank,
+        "heatdome_rank": heatdome_rank,
+        "signal": official_warning is not None or heatdome_rank >= HeatDomeRisk.ELEVATED.rank,
     }
     conditions = _conditions(params)
     fired: list[dict[str, Any]] = []
     not_evaluated: list[dict[str, Any]] = []
     for rule in rules.rules:
-        missing = [f for f in rule["required_fields"] if not ctx.field(f).is_usable_fresh]
-        if (
-            rule["id"] in ("R-HD-01", "R-EX-01")
-            and not ctx.field("heat.heatdome_risk").is_available
-        ):
-            missing = ["heat.heatdome_risk"]
+        missing = [
+            f
+            for f in rule["required_fields"]
+            if not ctx.field(f).is_usable_fresh
+            and not (f == "heat.heatdome_risk" and signal_available)
+        ]
+        if rule["id"] in _SIGNAL_RULES and not signal_available:
+            missing = ["heat.heatdome_risk or official warning"]
         if missing or (rule["id"] in ("R-CR-01",) and priority_pct is None):
             not_evaluated.append({"id": rule["id"], "missing_fields": missing or ["priority"]})
             continue
         cond = conditions.get(rule["id"])
-        list(p.values())
         if cond is None or any(v != v for k, v in p.items() if k in _needed(rule["id"])):
             not_evaluated.append({"id": rule["id"], "missing_fields": ["city percentiles"]})
             continue
@@ -159,6 +179,10 @@ def recommend(
             "caveats": rule["caveats"],
             "audience": rule["audience"],
         }
+        if rule["id"] in _SIGNAL_RULES and official_warning is not None:
+            entry["official_warning"] = {
+                k: official_warning.get(k) for k in ("level", "issued_by", "valid_until", "text")
+            }
         if rule["id"] == "R-EC-01":
             entry["options"] = [
                 {
@@ -182,10 +206,61 @@ def recommend(
     }
 
 
+def matched_cooling(
+    ctx: WardContext,
+    heat_type: str | None,
+    rules: RuleSet,
+    params: ParamRegistry,
+    lang: str = "en",
+) -> dict[str, Any]:
+    """Catalogue entries whose tags match this ward (``GET /cooling-options``).
+
+    Tags known for a ward: heat type and built form. Roof type and ownership are not in the
+    Ward Context, so they are reported as ``unknown_tags`` (an entry is never excluded by them).
+    """
+    built = ctx.value("built_environment.built_fraction")
+    forms: set[str] = set()
+    if built is not None and built >= params.require_float("P-BUILT-DENSE"):
+        forms.add("dense")
+    if heat_type == HeatType.OPEN_BARE_OR_INDUSTRIAL.value:
+        forms.add("industrial")
+    matched = []
+    for o in rules.cooling:
+        suits = o["suits"]
+        if heat_type not in suits["heat_type"]:
+            continue
+        if suits["built_form"] and built is not None and not (forms & set(suits["built_form"])):
+            continue
+        matched.append(
+            {
+                "id": o["id"],
+                "name": o["name_i18n"][lang],
+                "type": o["type"],
+                "cost_band": o["cost_band"],
+                "capex_range_inr": o.get("capex_range_inr"),
+                "evidence": [
+                    {k: rules.evidence[e][k] for k in ("id", "title", "url", "grade")}
+                    for e in o["evidence_ref"]
+                ],
+                "caveats": o["caveats"],
+            }
+        )
+    return {
+        "ward_id": ctx.ward_id,
+        "heat_type": heat_type,
+        "built_form": sorted(forms) or None,
+        "options": matched,
+        "unknown_tags": ["roof_type", "ownership"],
+        "note": "Costs are bands only until a cited local schedule is added",
+    }
+
+
 def _needed(rule_id: str) -> set[str]:
     return {
         "R-CR-01": {"roof", "priority"},
         "R-SO-01": {"roof"},
         "R-CP-01": {"exposed", "roof"},
         "R-GR-01": {"bare", "ndvi"},
+        "R-RD-01": {"exposed"},
+        "R-FR-01": {"built"},
     }.get(rule_id, set())

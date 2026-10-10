@@ -59,12 +59,27 @@ P-HD-HORIZON.
 AWS account (requester-pays), Bedrock model access or `ANTHROPIC_API_KEY`, Deepgram key,
 Polly access, FIRMS MAP_KEY.
 
-## 6. Open items from the final build (OPEN)
+## 6. Open items (OPEN)
 
-* **AWS deployment was not run**: no AWS credentials on the build machine. `infra/` synthesises (`cdk synth`); deploy with `npx cdk deploy --all`, then load data with `RUNTIME=aws python -m scripts.run_pipeline`.
-* Strands engine against Bedrock / Anthropic is untested (no keys). Agent behaviour verified with the deterministic engine only.
-* M17 is a compact implementation (7 rules); evidence entries other than the PM Surya Ghar policy are placeholders marked NV and cannot enter Tier 1.
-* M43 runs on the fixture ensemble only; the Open-Meteo adapter is not written. Hindcast validation is not built.
-* M41 auth is API-key only (no Cognito). Planner-write routes (advisories, fire incidents) are deferred.
-* ΔLST is evaluated only on the synthetic city; no real-city run (needs ward layer, buildings, WorldPop, WorldCover, DEM).
-* Property/golden suites run ~5 minutes in total (`uv run poe test`).
+* **AWS deployment was not run**: no credentials on the build machine (the owner deploys). `infra/` synthesises; Cognito, SNS, Polly, Bedrock, S3 and DynamoDB adapters are written but have never touched real AWS.
+* Strands engine against Bedrock / Anthropic is untested (no keys). Agent behaviour is verified with the deterministic engine (30-turn EN+HI golden suite, red-team prompts). All 13 tools are registered with Strands.
+* M17 evidence: only the PM Surya Ghar entry is real; the rest are placeholders marked NV (grade C, never Tier 1).
+* **M43 live path is temperature-only**: Open-Meteo has no wired Z500 climatology, so live forecasts are labelled `criteria_mode: temperature_only`, low confidence, capped at `watch`. The full ridge criterion runs on the fixture / any source that provides Z500. Hindcast *scoring* (hit rate, FAR, Brier, parameter sensitivity) is built (`m43_eval.py`) but has not been run on archived real forecasts. Open-Meteo, NASA POWER and FIRMS field names are [R] and were only exercised against mocked responses.
+* **M23 HPI** uses the NDVI-drop proxy for tree loss (Hansen GFC is not wired) and, for fewer than 3 protected areas, fixed trend scales instead of percentiles across areas. I_fire has no multi-year history in the fixture, so the fixture HPI uses 3 indicators.
+* **M24** needs a real hot-season series per ward (`trend_series`); the fixture is synthetic. Mann–Kendall uses the Hamed–Rao correction only when the detrended series is serially correlated.
+* **M20+21** electricity *forecast* mode (peak-demand regression) is data-gated and not built; readiness prompts never use bed, stock or demand data.
+* **M16** uses 3×3 blocks and OLS+XGBoost/SHAP; NDVI is kept and NDBI dropped by the VIF filter. Not validated by an expert check on real wards.
+* **ΔLST tiles** are PNG PMTiles for zoom 10–14 built with Pillow (no tippecanoe). Served through the API with Range support; on AWS serve the object from S3/CloudFront instead.
+* Roof outline: drawn on a 2 m grid sketch (no basemap) and converted to a lon/lat polygon around the demo location; a real map-based tracer is not built.
+* Real-city run, MODIS validation, verified costs/coefficients (`P-CM2`, `P-DALB`, `P-KCOOL`, `P-KIND`, `P-GCOST`), real DISCOM tariffs: data work, still open.
+* Stage 8 (electricity forecast, GMM second opinion, CNN, Aurora) is data-gated and not started. Pipeline (Step Functions/Fargate), Amplify, EventBridge/SNS and CloudWatch alarm stacks are deployment work.
+* Property/golden suites take ~6 minutes in total (`uv run poe test`).
+
+## 7. Added in the completion pass (DECIDED)
+
+* D19 `POST /analysis/heat` runs the pipeline in a background thread locally (a Step Functions/Fargate task on AWS); the run state lives in the `runs` table, a second trigger returns 409.
+* D20 `X-Actor` names the person behind a shared API key so the two-person rules work without Cognito; with `COGNITO_ISSUER` + `COGNITO_CLIENT_ID` set, Bearer tokens map `admin`/`planner` groups to roles.
+* D21 Admin parameter edits (`PUT /admin/config`) need a value, an evidence status and a source; they are stored as versioned overrides and re-applied at startup. Setting `P-CM2` unlocks the budget plan.
+* D22 New parameters: `P-GAMMA` (power temperature coefficient, fallback only) and `P-BUILT-DENSE` (built form for cooling-option matching), both [ASSUME].
+* D23 Fixture fire data is evaluated "as of" its last pass (not today) so the 30-day window is meaningful.
+* D24 Public agent sessions only see public alerts/advisories; staff items (fire candidates, forecast signals, transitions) are never exposed to the assistant.

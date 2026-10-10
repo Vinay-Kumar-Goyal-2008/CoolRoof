@@ -36,6 +36,8 @@ class HeatDomeForecast:
     source: str
     criteria: dict[str, float]
     first_date: str | None = None
+    criteria_mode: str = "temperature_and_ridge"  # or "temperature_only" (no Z500 available)
+    imd_style: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -53,6 +55,8 @@ class HeatDomeForecast:
             "label_hi": DISCLAIMER_HI,
             "audience": "staff",
             "official_warning_ref": None,
+            "criteria_mode": self.criteria_mode,
+            "imd_style": self.imd_style,
         }
 
 
@@ -74,7 +78,40 @@ def _longest_run(flags: np.ndarray) -> tuple[int, int]:
     return best, best_start
 
 
-def forecast_heatdome(nwp: dict[str, Any] | None, params: ParamRegistry) -> HeatDomeForecast:
+IMD_STYLE_LABEL = "meets IMD-style heatwave criterion in forecast"
+
+
+def imd_style_check(
+    tmax: np.ndarray, t_mean: np.ndarray, criteria: dict[str, Any] | None, region: str = "plains"
+) -> dict[str, Any] | None:
+    """Share of members whose forecast Tmax meets an IMD-style heatwave definition.
+
+    Never an IMD warning. The criteria are a policy record that needs verification against
+    current IMD definitions (spec Appendix B item 10).
+    """
+    if not criteria:
+        return None
+    c = criteria["criteria"]
+    floor = float(c["min_tmax_c"][region])
+    meets = (tmax >= floor) & (
+        (tmax - t_mean >= float(c["departure_c"]["heatwave"]))
+        | (tmax >= float(c["absolute_tmax_c"]["heatwave"]))
+    )
+    share = float(meets.any(axis=1).mean())
+    return {
+        "meets": share >= 0.5,
+        "member_share": round(share, 3),
+        "label": IMD_STYLE_LABEL,
+        "not_an_imd_warning": True,
+        "criteria_status": criteria.get("status"),
+    }
+
+
+def forecast_heatdome(
+    nwp: dict[str, Any] | None,
+    params: ParamRegistry,
+    imd_criteria: dict[str, Any] | None = None,
+) -> HeatDomeForecast:
     p = {
         k: params.require_float(k)
         for k in ("P-HD-T", "P-HD-Z", "P-HD-DAYS", "P-HD-P1", "P-HD-P2", "P-HD-P3")
@@ -86,19 +123,26 @@ def forecast_heatdome(nwp: dict[str, Any] | None, params: ParamRegistry) -> Heat
     members = nwp["members"]
     clim = nwp["climatology"]
     tmax = np.array([m["tmax_c"] for m in members])
-    z500 = np.array([m["z500_box_mean_m"] for m in members])
+    z_missing = any(m.get("z500_box_mean_m") is None for m in members) or any(
+        c.get("z500_mean_m") is None for c in clim
+    )
+    z500 = (
+        np.zeros_like(tmax)
+        if z_missing
+        else np.array([m["z500_box_mean_m"] for m in members], dtype=float)
+    )
     t_mean = np.array([c["tmax_mean_c"] for c in clim])
     t_p90 = np.array([c["tmax_p90_c"] for c in clim])
-    z_mean = np.array([c["z500_mean_m"] for c in clim])
-    z_std = np.array([c["z500_std_m"] for c in clim])
+    z_mean = np.zeros(len(clim)) if z_missing else np.array([c["z500_mean_m"] for c in clim])
+    z_std = np.ones(len(clim)) if z_missing else np.array([c["z500_std_m"] for c in clim])
     hot = (tmax >= t_p90) & (tmax - t_mean >= p["P-HD-T"])
-    ridge = (z500 - z_mean) >= p["P-HD-Z"] * z_std
+    ridge = np.ones_like(hot) if z_missing else (z500 - z_mean) >= p["P-HD-Z"] * z_std
     signal = hot & ridge
     need = int(p["P-HD-DAYS"])
     runs = [_longest_run(row) for row in signal]
     has_event = np.array([r[0] >= need for r in runs])
     p_event = float(has_event.mean())
-    low_conf = len(members) < 2
+    low_conf = len(members) < 2 or z_missing
     risk = (
         HeatDomeRisk.HIGH
         if p_event >= p["P-HD-P3"]
@@ -108,6 +152,8 @@ def forecast_heatdome(nwp: dict[str, Any] | None, params: ParamRegistry) -> Heat
         if p_event >= p["P-HD-P1"]
         else HeatDomeRisk.NONE
     )
+    if z_missing and risk.rank > HeatDomeRisk.WATCH.rank:
+        risk = HeatDomeRisk.WATCH  # temperature-only evidence never reaches elevated/high
     first_day = duration = None
     tmax_range = None
     first_date = None
@@ -132,4 +178,6 @@ def forecast_heatdome(nwp: dict[str, Any] | None, params: ParamRegistry) -> Heat
         nwp.get("source", "nwp"),
         p,
         first_date,
+        criteria_mode="temperature_only" if z_missing else "temperature_and_ridge",
+        imd_style=imd_style_check(tmax, t_mean, imd_criteria),
     )

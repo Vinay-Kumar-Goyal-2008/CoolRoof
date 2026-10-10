@@ -66,3 +66,26 @@ footer { margin: 24px 0 8px; text-align: center; }
 .maplibregl-ctrl-group button { min-height: 29px; padding: 0; }
 .ward-label { pointer-events: none; font-size: 12px; font-weight: 700; color: #111;
   text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
+select { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 8px; padding: 8px 10px; min-height: 40px; }
+.layers { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.layers legend { padding: 0 6px; color: var(--muted); font-size: .85rem; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: .9rem; }
+.check input { width: auto; min-height: 0; }
+.legend-chips { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; }
+.chip i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid var(--line); }
+.banner.official { border-color: #b91c1c; background: #fee2e2; color: #450a0a; }
+@media (prefers-color-scheme: dark) { .banner.official { background: #450a0a; color: #fecaca; border-color: #f87171; } }
+.drivers { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 6px; }
+.drivers li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.dbar { width: 100%; height: 14px; color: var(--muted); }
+.spark { width: 140px; height: 36px; color: var(--accent); }
+.sketch { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 4px; }
+.sketch-grid { width: 100%; max-width: 320px; aspect-ratio: 1; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; cursor: crosshair; color: var(--ink); touch-action: manipulation; }
+.alert { border-left: 4px solid var(--line); padding: 2px 10px; margin: 8px 0; }
+.alert.sev-high { border-color: #b91c1c; } .alert.sev-medium { border-color: #ea580c; } .alert.sev-low { border-color: #ca8a04; }
+.json { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow: auto; max-height: 220px; }
+button.link { border: 0; background: none; padding: 0; min-height: 0; color: var(--accent); text-decoration: underline; }
+audio { width: 100%; margin-top: 6px; }
