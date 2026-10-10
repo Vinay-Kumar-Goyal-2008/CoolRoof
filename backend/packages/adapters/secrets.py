@@ -8,12 +8,15 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from pydantic import SecretStr
+
+from packages.core.enums import Runtime
 from packages.core.settings import AppSettings
 
 if TYPE_CHECKING:
     from mypy_boto3_secretsmanager import SecretsManagerClient
 
-__all__ = ["EnvSecrets", "Secrets", "SecretsManagerSecrets"]
+__all__ = ["EnvSecrets", "Secrets", "SecretsManagerSecrets", "apply_secret_settings"]
 
 
 class Secrets(ABC):
@@ -54,3 +57,22 @@ class SecretsManagerSecrets(Secrets):
 
     def get(self, name: str) -> str | None:
         return self._values.get(name) or None
+
+
+_SECRET_FIELDS = (
+    ("planner_api_key", "PLANNER_API_KEY"),
+    ("admin_api_key", "ADMIN_API_KEY"),
+    ("firms_map_key", "FIRMS_MAP_KEY"),
+)
+
+
+def apply_secret_settings(settings: AppSettings, secrets: Secrets) -> AppSettings:
+    """On AWS, API keys live in Secrets Manager (not Lambda environment variables). Explicit settings win."""
+    if settings.runtime is not Runtime.AWS:
+        return settings
+    updates: dict[str, SecretStr] = {}
+    for field, name in _SECRET_FIELDS:
+        value = secrets.get(name)
+        if getattr(settings, field) is None and value:
+            updates[field] = SecretStr(value)
+    return settings.model_copy(update=updates) if updates else settings

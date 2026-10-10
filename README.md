@@ -19,8 +19,8 @@ API Gateway, S3, DynamoDB, CDK) is written but **has not been deployed yet**.
 | Folder | Contents |
 |---|---|
 | `backend/` | Python 3.12 (uv). `packages/core` contracts · `adapters` local/AWS interfaces · `pipeline` batch modules · `services` request-time modules · `agent` assistant · `api` FastAPI. Plus `config/`, `rules/v1/`, `seed/policy/`, `assets/fonts/`, `scripts/`, `tests/` |
-| `frontend/` | Next.js 15 + MapLibre, English/हिंदी, Playwright tests (`e2e/`) |
-| `infra/` | AWS CDK (Python): `DataStack` (S3 + 12 DynamoDB tables), `ApiStack` (Lambda container + API Gateway) |
+| `frontend/` | Next.js 15 + MapLibre, English/हिंदी, Playwright tests (`e2e/`). `/` is the landing page; the app lives under `/app` (Overview, Heat map, Rooftop solar, Assistant, Alerts & forecast, Planner console) in a sidebar shell; warm-dark theme with Outfit and JetBrains Mono |
+| `infra/` | AWS CDK (Python), 6 stacks: Data (S3 + 12 DynamoDB tables), Alerts (SNS + Secrets Manager), Auth (Cognito), Api (Lambda container + API Gateway), Jobs (EventBridge), Monitoring (alarms + Budget). Details: `infra/README.md` |
 | `docs/` | `GAPS.md` (every deviation + open item, **read it**), `DEMO.md` (3-minute video script) |
 | `Agent/` | The original specs (spec v0.3, PRD, SPEC, TASKS, AGENTS), `SCOPE_DEFERRED.md`, |
 | `.claude/skills/` | All installed Claude skills in one folder (restorable from `skills-lock.json`) |
@@ -38,7 +38,7 @@ Every module in the plan now has code and tests. What remains is **deployment, l
 | 4 Heat intelligence | M15–M21, M37, Cognito | **Done** (drivers, 10 rules, advisories + TTS, readiness, alerts hub, Cognito verification) |
 | 5 Hazards + forecast | M22, M43 | **Done**: FIRMS pipeline + incidents; forecast with Open-Meteo adapter, IMD-style check, hindcast scoring |
 | 6 Environment | M23, M24 | **Done** (habitat pressure index, degradation trends) |
-| 7 AWS deploy | CDK stacks | 2 of 6 stacks written; **never deployed** (owner's step) |
+| 7 AWS deploy | CDK stacks | 6 stacks written, synth-tested offline; **never deployed** (owner's step). Frontend hosting is not in CDK |
 | 8 Data-gated | electricity forecast, GMM, CNN, Aurora | Not started (needs data) |
 
 ### Module by module
@@ -61,9 +61,9 @@ Every module in the plan now has code and tests. What remains is **deployment, l
 | M33+34 agent | ⚠️ | Deterministic engine tested; **Strands engine (Bedrock / Anthropic) written, never run**. 17 tools, keyword intents, grounding check, refusals |
 | M35+36 PDF | ✅ | Noto Sans + Devanagari, vector roof outline |
 | M37 alerts | ✅ | Dedupe, rate limit, expiry, approval gates, audit, hashed subscriptions, one publish per language (SNS adapter untested) |
-| M38 dashboard | ✅ | 11 screens: map with ΔLST raster, hotspots, facilities, fire, protected areas, degradation colouring; ward panel (drivers, readiness, land); solar with roof sketch; assistant; alerts & forecast with audio; planner console |
+| M38 dashboard | ✅ | Landing page plus 11 screens in the `/app` shell: map with ΔLST raster, hotspots, facilities, fire, protected areas, degradation colouring; ward panel (drivers, readiness, land); solar with roof sketch; assistant; alerts & forecast with audio; planner console |
 | M39 API | ✅ | Every route in spec §6 (plus `/layers`, `/tiles`, `/audio`, `/admin/params`, `/admin/metrics`) |
-| M40–M42 | ⚠️ | DocStore/BlobStore done; auth = API keys + `X-Actor` or Cognito Bearer; metrics = CloudWatch EMF lines + `/admin/metrics` (no alarms/dashboards yet) |
+| M40–M42 | ⚠️ | DocStore/BlobStore done; auth = API keys + `X-Actor` or Cognito Bearer; metrics = CloudWatch EMF lines + `/admin/metrics`; alarms and a Budget are in the CDK monitoring stack (not deployed, no dashboards) |
 | M43 heat-dome | ⚠️ | Fixture ensemble correct; live Open-Meteo path is temperature-only (capped at `watch`); hindcast scoring code ready, not run on real archives |
 
 ### Tests
@@ -71,6 +71,7 @@ Every module in the plan now has code and tests. What remains is **deployment, l
 `uv run poe test` — backend unit, property, golden and end-to-end suites (~6 min; the e2e files run the real API, the
 pipeline, advisories, alerts, incidents, auth and the 30-turn conversation). `ruff` clean, `mypy` clean.
 `npm run test:e2e` in `frontend/` — 5 Playwright tests in real Chromium (needs API on :8000 and the app running).
+`pytest` in `infra/` — 7 offline tests that synthesise every CDK stack and check the wiring (also run in CI).
 
 ## What is left (start here)
 
@@ -79,7 +80,7 @@ Everything that can run offline is done. In order:
 1. **Deploy to AWS** (needs credentials + Docker): `cd infra; npx cdk deploy --all`, load data with
    `RUNTIME=aws python -m scripts.run_pipeline --city mini_city`. Fix what the first real deploy exposes. The
    `S3BlobStore`, `DynamoDocStore`, `SNSNotifier`, `SecretsManagerSecrets`, `PollyTTS` and Cognito paths have never run.
-   Not yet written: Step Functions/Fargate pipeline stack, Amplify, EventBridge schedules for `scripts/run_jobs.py`, CloudWatch alarms.
+   Not written: a Step Functions/Fargate pipeline stack (the pipeline runs from your machine) and Amplify frontend hosting. Full steps: `infra/README.md`.
 2. **Run the Strands engine** against Bedrock (`BEDROCK_MODEL_ID`, `RUNTIME=aws`) or Anthropic (`ANTHROPIC_API_KEY`); rerun the golden
    conversation through it and confirm the grounding fallback.
 3. **Verify live services**: Open-Meteo, NASA POWER, FIRMS (`FIRMS_MAP_KEY`) and PVGIS field names are [R] and only mocked in tests. Add
@@ -116,12 +117,14 @@ Browser tests: start the API and `npm start`, then `npm run test:e2e` in `fronte
 
 ## Deploy to AWS
 
+Full steps, context options and post-deploy checklist: **`infra/README.md`**. Short version:
+
 ```powershell
 cd infra
 python -m venv .venv ; .venv\Scripts\pip install -r requirements.txt
-npm install                              # project-local CDK CLI
-npx cdk bootstrap ; npx cdk deploy --all # needs AWS credentials and a running Docker engine
-cd ..\backend
+npm install
+npx cdk bootstrap ; npx cdk deploy --all -c bedrock_model_id=<id> -c ops_email=you@example.com   # needs AWS credentials and Docker
+cd ..ackend
 $env:RUNTIME="aws"; $env:S3_BUCKET="<bucket from stack output>"
 uv run python -m scripts.run_pipeline --city mini_city
 ```
