@@ -258,30 +258,131 @@ Set `BACKEND_URL=<ApiUrl>` for the frontend (`next.config.mjs` proxies `/api/*` 
 
 ## 🏛 Architecture
 
+```mermaid
+flowchart TB
+    B["Browser — Next.js 15"]
+
+    subgraph FRONTEND["Frontend"]
+        direction TB
+
+        subgraph HEAT["/app/heat"]
+            WM["WardMap — MapLibre"]
+            WP["WardPanel"]
+            DEL{"Ward ID starts with DEL-*?"}
+            DD["Local delhi_data.ts"]
+            HP["/api Proxy"]
+
+            WM --> WP
+            WP --> DEL
+            DEL -->|Yes| DD
+            DEL -->|No| HP
+        end
+
+        subgraph SOLAR["/app/solar"]
+            SC["SolarCard"]
+            SA["POST /solar/assess"]
+            SC --> SA
+        end
+
+        subgraph CHAT["/app/chat"]
+            CP["ChatPanel"]
+            AC["POST /agent/chat"]
+            CP --> AC
+        end
+    end
+
+    subgraph BACKEND["FastAPI Backend — Port 8000"]
+        direction TB
+
+        subgraph PIPE["Pipeline — Landsat / LST"]
+            PCORE["Pipeline Processing"]
+            PA["Local Adapter"]
+            PDATA["Local Files / Dictionary"]
+            PCORE --> PA --> PDATA
+        end
+
+        subgraph SERVICES["Services — Recommendations / Advisories"]
+            SCORE["Recommendation Services"]
+            SLOCAL["Local Adapter"]
+            SDATA["Local Files / Dictionary"]
+            SCORE --> SLOCAL --> SDATA
+        end
+
+        subgraph AGENT["Agent — Strands / Mock"]
+            ENGINE["Deterministic Engine"]
+            TESTS["Tested"]
+            ENGINE --> TESTS
+        end
+    end
+
+    subgraph AWS["AWS Adapter — Written, Not Deployed"]
+        ADAPTER["AWS Adapter"]
+        S3["Amazon S3"]
+        DDB["DynamoDB"]
+        SNS["Amazon SNS"]
+        LAMBDA["AWS Lambda"]
+        CDK["AWS CDK Stacks"]
+
+        ADAPTER --> S3
+        ADAPTER --> DDB
+        ADAPTER --> SNS
+        ADAPTER --> LAMBDA
+        CDK -.-> ADAPTER
+    end
+
+    B --> WM
+    B --> SC
+    B --> CP
+
+    HP --> PCORE
+    SA --> PCORE
+    SA --> SCORE
+    AC --> ENGINE
+
+    PDATA -.->|Planned integration| ADAPTER
+    SDATA -.->|Planned integration| ADAPTER
+
+    classDef frontend fill:#DCEBFF,stroke:#3973AC,color:#16365C
+    classDef local fill:#DDF5E3,stroke:#39965B,color:#174D2B
+    classDef backend fill:#FFF0D5,stroke:#C58A22,color:#68440B
+    classDef aws fill:#FBE2E2,stroke:#C65353,color:#702B2B
+    classDef decision fill:#F0E2FF,stroke:#8756B3,color:#48266A
+
+    class B,WM,WP,SC,CP frontend
+    class DD,PDATA,SDATA,ENGINE,TESTS local
+    class PCORE,PA,SCORE,SLOCAL,SA,AC,HP backend
+    class ADAPTER,S3,DDB,SNS,LAMBDA,CDK aws
+    class DEL decision
 ```
-Browser (Next.js 15)
-  │
-  ├── /app/heat    → WardMap (MapLibre) + WardPanel
-  │                   DEL-* wards → local delhi_data.ts  (zero backend calls)
-  │                   Other wards → /api proxy → FastAPI
-  │
-  ├── /app/solar   → SolarCard → POST /solar/assess
-  └── /app/chat    → ChatPanel → POST /agent/chat
-                                      │
-                              FastAPI (port 8000)
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    │                 │                  │
-               Pipeline           Services           Agent
-            (Landsat/LST)    (Recs/Advisories)   (Strands/mock)
-                    │                 │                  │
-              local adapter      local adapter     deterministic
-              (files/dict)       (files/dict)      engine (tested)
-                    │
-              [AWS adapter]       ← written, never deployed
-           S3 · DynamoDB · SNS
-           Lambda · CDK stacks
-```
+
+## Frontend
+
+- **Heat:** Uses MapLibre for ward visualization. Delhi wards (`DEL-*`) read from `delhi_data.ts` without backend calls; other wards use the API proxy.
+- **Solar:** `SolarCard` sends assessment requests to `POST /solar/assess`.
+- **Chat:** `ChatPanel` sends messages to `POST /agent/chat`.
+
+## Backend
+
+FastAPI runs on port `8000` and contains three main components:
+
+1. **Pipeline:** Processes Landsat and land surface temperature (LST) data.
+2. **Services:** Provides recommendations and advisories.
+3. **Agent:** Uses a deterministic engine with a Strands/mock integration.
+
+The current implementation uses local adapters backed by files and dictionaries.
+
+## AWS Integration
+
+The AWS adapter has been written but is not deployed. The planned infrastructure includes:
+
+- Amazon S3 for object storage.
+- DynamoDB for structured data.
+- Amazon SNS for notifications.
+- AWS Lambda for serverless execution.
+- AWS CDK for infrastructure provisioning.
+
+Dotted arrows indicate planned integration, not active production connections.
+
 
 **Key design decisions:**
 - **Value envelope** (`core/envelope.py`): every context value carries class, source, dates, resolution, confidence and assumption IDs. Missing data is `unavailable` — **never 0**.
