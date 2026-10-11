@@ -12,8 +12,6 @@ CoolRoof is a full-stack urban-heat intelligence platform that ranks city wards 
 [![MapLibre](https://img.shields.io/badge/MapLibre-GL-396CB2?logo=maplibre)](https://maplibre.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
-
 ## 📋 Table of Contents
 
 - [Delhi MCD Data Layer](#-delhi-mcd-data-layer-deepanshu-branch)
@@ -24,14 +22,9 @@ CoolRoof is a full-stack urban-heat intelligence platform that ranks city wards 
 - [Running Tests](#-running-tests)
 - [Deploy to AWS](#-deploy-to-aws)
 - [Architecture](#-architecture)
-- [Important Limitations](#-important-limitations)
 - [License](#-license)
 
-## 🗺 Delhi MCD Data Layer *(Deepanshu Branch)*
-
-This branch adds a complete **offline Delhi NCT dataset** — no backend or API key required. When the map is set to **Delhi (MCD Administrative Zones)**, all data is served from `frontend/lib/delhi_data.ts` directly in the browser.
-
-### What's included
+## 🗺 Delhi MCD Data Layer
 
 | Data | Details |
 |---|---|
@@ -73,8 +66,6 @@ CoolRoof/
 ├── Agent/            # Original specs (CoolRoof_Build_Spec_v0.3.md, TASKS.md, PRD)
 └── docker-compose.yml
 ```
-
----
 
 ## 🚀 Quick Start
 
@@ -138,8 +129,6 @@ FIRMS_MAP_KEY=
 ```
 
 Model and scoring assumptions live in `config/params.default.yaml`. Each parameter has an ID (e.g. `P-TAU`), a value and a status: `[ASSUME]`, `[NV]` (needs verification) or `[V]` (verified). City settings live in `config/cities/<city>.yaml`.
-
----
 
 ## 🔌 API Usage Examples
 
@@ -207,8 +196,6 @@ curl -X POST http://localhost:8000/agent/chat \
 | **Solar** | `POST /solar/assess`, `GET /policy/subsidy`, `GET /checklist` |
 | **Agent and alerts** | `POST /agent/chat`, `GET /alerts`, `POST /alerts/subscriptions` |
 
----
-
 ## 🧪 Running Tests
 
 Every module ships with tests. All run offline on the synthetic mini_city fixture (12 wards, ~500 footprints, sample scenes, FIRMS and forecast data).
@@ -268,7 +255,6 @@ Set `BACKEND_URL=<ApiUrl>` for the frontend (`next.config.mjs` proxies `/api/*` 
 
 > ⚠️ **Never deployed yet.** The `S3BlobStore`, `DynamoDocStore`, `SNSNotifier`, `SecretsManagerSecrets`, `PollyTTS` and Cognito paths have never run against real AWS. Fix what the first real deploy exposes.
 
----
 
 ## 🏛 Architecture
 
@@ -303,19 +289,6 @@ Browser (Next.js 15)
 - **Policy as data** (`seed/policy/*.json`): subsidy tiers, tariffs, checklists are records, not code.
 - **Adapters** (`adapters/`): every external dependency has `local` and `aws` implementations selected by `RUNTIME`.
 - **The agent never computes numbers**: replies are templates over tool outputs; any number not in tool outputs triggers one regeneration, then a template fallback.
-
----
-
-## ⚠️ Important Limitations
-
-- **LST is not air temperature.** It is surface temperature at a late-morning satellite pass. Landsat thermal data is ~100 m native resolution — individual-roof temperature cannot be resolved. Roof ranking uses neighbourhood heat + roof area + people + cost.
-- **Forecasts and environment outputs are indicators**, not official warnings or diagnoses.
-- **Missing data is shown as `unavailable`**, never as `0` or a national default.
-- **Subsidy figures and eligibility must be confirmed** on [pmsuryaghar.gov.in](https://pmsuryaghar.gov.in). Net-metering terms vary by state regulator.
-- **Cool-roof coefficients and costs are unverified** (`P-CM2`, `P-DALB`, `P-KCOOL`, `P-KIND` are `[NV]`). Admins can set them via `PUT /admin/config` or the planner console.
-- **Delhi data is curated offline data**, not live satellite readings. It demonstrates the platform with realistic but synthetic ΔLST values for the 12 MCD zones.
-- **Nothing has been validated against ground truth** or run on a real city end-to-end.
-- Items needing verification are tracked in [`docs/GAPS.md`](docs/GAPS.md).
 
 
 ## 📜 License
