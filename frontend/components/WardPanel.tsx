@@ -3,23 +3,72 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ApiError, api, type Driver, type RoofItem, type WardSummary } from "@/lib/api";
+import {
+  getDelhiDrivers,
+  getDelhiHeatType,
+  getDelhiReadiness,
+  getDelhiRecommendations,
+  getDelhiRoofs,
+  getDelhiSoil,
+} from "@/lib/delhi_data";
 import { fmt, useI18n } from "@/lib/i18n";
 import { Badge } from "./Badge";
+
+/** True when the ward belongs to the offline Delhi dataset (no backend needed). */
+const isDelhi = (wardId: string) => wardId.startsWith("DEL-");
 
 export function WardPanel({ ward, onRoofs }: { ward: WardSummary;
                                                 onRoofs: (roofs: RoofItem[] | null) => void }) {
   const { t, lang } = useI18n();
-  const type = useQuery({ queryKey: ["type", ward.ward_id], queryFn: () => api.heatType(ward.ward_id) });
-  const recs = useQuery({ queryKey: ["recs", ward.ward_id, lang],
-                          queryFn: () => api.recommendations(ward.ward_id, lang) });
+  const delhi = isDelhi(ward.ward_id);
+
+  const type = useQuery({
+    queryKey: ["type", ward.ward_id],
+    queryFn: () =>
+      delhi ? Promise.resolve(getDelhiHeatType(ward.ward_id)) : api.heatType(ward.ward_id),
+  });
+
+  const recs = useQuery({
+    queryKey: ["recs", ward.ward_id, lang],
+    queryFn: () =>
+      delhi
+        ? Promise.resolve(getDelhiRecommendations(ward.ward_id, lang))
+        : api.recommendations(ward.ward_id, lang),
+  });
+
   const roofs = useQuery({
     queryKey: ["roofs", ward.ward_id],
-    queryFn: async () => { const r = await api.roofs(ward.ward_id); onRoofs(r.roofs); return r; },
+    queryFn: async () => {
+      const r = delhi ? getDelhiRoofs(ward.ward_id) : await api.roofs(ward.ward_id);
+      onRoofs(r.roofs);
+      return r;
+    },
     retry: false,
   });
-  const drivers = useQuery({ queryKey: ["drivers", ward.ward_id], queryFn: () => api.drivers(ward.ward_id), retry: false });
-  const ready = useQuery({ queryKey: ["ready", ward.ward_id, lang], queryFn: () => api.readiness(ward.ward_id, lang), retry: false });
-  const soil = useQuery({ queryKey: ["soil", ward.ward_id], queryFn: () => api.soil(ward.ward_id), retry: false });
+
+  const drivers = useQuery({
+    queryKey: ["drivers", ward.ward_id],
+    queryFn: () =>
+      delhi ? Promise.resolve(getDelhiDrivers(ward.ward_id)) : api.drivers(ward.ward_id),
+    retry: false,
+  });
+
+  const ready = useQuery({
+    queryKey: ["ready", ward.ward_id, lang],
+    queryFn: () =>
+      delhi
+        ? Promise.resolve(getDelhiReadiness(ward.ward_id, lang))
+        : api.readiness(ward.ward_id, lang),
+    retry: false,
+  });
+
+  const soil = useQuery({
+    queryKey: ["soil", ward.ward_id],
+    queryFn: () =>
+      delhi ? Promise.resolve(getDelhiSoil(ward.ward_id)) : api.soil(ward.ward_id),
+    retry: false,
+  });
+
   const name = lang === "hi" ? ward.name_hi : ward.name;
   const p = ward.priority;
 
@@ -42,6 +91,7 @@ export function WardPanel({ ward, onRoofs }: { ward: WardSummary;
       )}
 
       <h3>{t("heatType")}: {type.data ? type.data.type.replaceAll("_", " ") : "…"}</h3>
+      {type.isLoading && <p className="muted small">{t("loading")}</p>}
       {type.data?.brief.means && (
         <ul className="brief">
           <li><strong>{t("whatItMeans")}:</strong> {type.data.brief.means}</li>
@@ -114,6 +164,7 @@ export function WardPanel({ ward, onRoofs }: { ward: WardSummary;
       )}
 
       <h3>{t("topRoofs")}</h3>
+      {roofs.isLoading && <p className="muted small">{t("loading")}</p>}
       {roofs.error instanceof ApiError && <p className="warn">{t("roofsWithheld")}: {roofs.error.message}</p>}
       {roofs.data && (
         <>
