@@ -361,7 +361,9 @@ class HeatPipeline:
                     resolution_m=90.0,
                     assumptions=("P-DRIVER-BLOCK", "P-DRIVER-CV"),
                 ),
-                "heat.drivers_ref": ValueEnvelope.of(ref, ValueClass.DERIVED, "m16_drivers"),
+                "heat.drivers_ref": ValueEnvelope.of(
+                    ref, ValueClass.DERIVED, "m16_drivers", processed=processed
+                ),
             }
         return out
 
