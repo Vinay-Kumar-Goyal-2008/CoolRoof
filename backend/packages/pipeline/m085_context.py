@@ -268,7 +268,10 @@ def build_ward_contexts(
             section, _, name = spec.path.partition(".")
             sections[section][name] = env
         sections["administrative"]["discom"] = ValueEnvelope.of(
-            discom.discom, ValueClass.POLICY, f"city_config:{wards.city.slug}:discom_map"
+            discom.discom,
+            ValueClass.POLICY,
+            f"city_config:{wards.city.slug}:discom_map",
+            processed=run_date.isoformat(),
         )
         for path_section, extra in (administrative or {}).get(ward_id, {}).items():
             sections["administrative"][path_section] = extra
@@ -382,7 +385,9 @@ def build_roof_contexts(
                     processed=processed,
                 ),
                 floors_est=(
-                    ValueEnvelope.of(int(floors), ValueClass.MEASURED, buildings_source)
+                    ValueEnvelope.of(
+                        int(floors), ValueClass.MEASURED, buildings_source, processed=processed
+                    )
                     if floors is not None and not pd.isna(floors)
                     else None
                 ),
