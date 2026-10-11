@@ -16,7 +16,6 @@ CoolRoof is a full-stack urban-heat intelligence platform that ranks city wards 
 
 ## 📋 Table of Contents
 
-- [What is Built](#-what-is-built)
 - [Delhi MCD Data Layer](#-delhi-mcd-data-layer-deepanshu-branch)
 - [Repository Layout](#-repository-layout)
 - [Quick Start](#-quick-start)
@@ -26,29 +25,7 @@ CoolRoof is a full-stack urban-heat intelligence platform that ranks city wards 
 - [Deploy to AWS](#-deploy-to-aws)
 - [Architecture](#-architecture)
 - [Important Limitations](#-important-limitations)
-- [Contributing](#-contributing)
 - [License](#-license)
-
----
-
-## 🏗 What is Built
-
-The platform is **Windows-native and local-first**: it runs fully offline on a synthetic city (Pune) with no cloud credentials. The AWS target (Strands Agents + Bedrock, Lambda, API Gateway, S3, DynamoDB, CDK) is written but **has not been deployed yet**.
-
-| Stage | Plan | Status |
-|---|---|---|
-| 0 Scaffold | core, adapters, API, fixtures, CI | ✅ Done (CI workflow, docker-compose, `.env.example`) |
-| 1 Heat pipeline | M1–M14, tile builder | ✅ Done incl. ΔLST PMTiles |
-| 2 SuryaCheck | M25–M32 | ✅ Done incl. NASA POWER + pvlib fallback, shared cache, roof outline |
-| 3 Agent + PDF + UI | M33–M36, M38, M39, M41 | ✅ Done (all 11 screens); 30-turn EN+HI golden suite |
-| 4 Heat intelligence | M15–M21, M37, Cognito | ✅ Done (drivers, 10 rules, advisories + TTS, readiness, alerts hub) |
-| 5 Hazards + forecast | M22, M43 | ✅ Done: FIRMS pipeline + incidents; forecast with Open-Meteo adapter |
-| 6 Environment | M23, M24 | ✅ Done (habitat pressure index, degradation trends) |
-| 7 Delhi MCD real data | Real administrative zones | ✅ Done (12 MCD zones, offline, no backend needed) |
-| 8 AWS deploy | CDK stacks | 6 stacks written, synth-tested offline; **never deployed** |
-| 9 Data-gated | electricity forecast, GMM, CNN, Aurora | Not started (needs data) |
-
----
 
 ## 🗺 Delhi MCD Data Layer *(Deepanshu Branch)*
 
@@ -69,22 +46,6 @@ This branch adds a complete **offline Delhi NCT dataset** — no backend or API 
 | **Hotspots** | Urban thermal anomaly candidates (GeoJSON points) |
 | **Facilities** | Hospitals, schools, cooling centres (GeoJSON) |
 | **Forecast signal** | IMD-style orange heatwave alert for Delhi NCT |
-
-### Key files changed in this branch
-
-```
-frontend/
-├── lib/
-│   └── delhi_data.ts          ← New: complete offline Delhi dataset + 6 data functions
-├── components/
-│   └── WardPanel.tsx          ← Fixed: routes DEL-* wards to local functions (no 500 errors)
-├── app/app/heat/
-│   └── page.tsx               ← Added: Delhi/Pune city switcher UI
-└── lib/
-    └── data.tsx               ← Uses DELHI_WARDS_RESPONSE when city = "delhi"
-```
-
----
 
 ## 📁 Repository Layout
 
@@ -356,30 +317,6 @@ Browser (Next.js 15)
 - **Nothing has been validated against ground truth** or run on a real city end-to-end.
 - Items needing verification are tracked in [`docs/GAPS.md`](docs/GAPS.md).
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-1. **Open an issue** to report a bug or propose a feature.
-2. **Fork** the repository and create a branch: `git checkout -b feature/your-feature`.
-3. **Follow the project rules:**
-   - Never hard-code a coefficient, price, tariff or threshold. Add it to `config/params.default.yaml` as a parameter ID with a status.
-   - Never let the LLM compute numbers. Use a deterministic function.
-   - Add or update tests that cover your change.
-4. Run `uv run poe test` and `uv run poe lint`. Both must pass.
-5. **Open a pull request** describing what changed and why.
-
-### Branch strategy
-
-| Branch | Purpose |
-|---|---|
-| `main` | Stable trunk — merged from feature branches via PR |
-| `Deepanshu` | Delhi MCD data layer + WardPanel offline routing |
-| `Vaatsalya/Modules12` | Cloud infra + CI fixes |
-
----
 
 ## 📜 License
 
